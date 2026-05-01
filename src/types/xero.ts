@@ -2,6 +2,13 @@ export interface XeroConfig {
   baseUrl: string;
 }
 
+export type XeroEnvelope<K extends string, T> = { [key in K]: T[] } & {
+  Id: string;
+  Status: string;
+  ProviderName: string;
+  DateTimeUTC: string;
+};
+
 export interface XeroItem {
   ItemID: string;
   Code: string;

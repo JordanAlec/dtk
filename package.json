@@ -3,8 +3,12 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "runbook:auth-only": "tsx src/runbooks/auth-only.ts",
-    "runbook:xero": "tsx src/runbooks/xero.ts",
+    "runbook:oauth-only": "tsx src/runbooks/oauth-only.ts",
+    "runbook:xero-item": "tsx src/runbooks/xero/get-item-by-code.ts",
+    "runbook:xero-items": "tsx src/runbooks/xero/get-items.ts",
+    "runbook:xero-delete-item": "tsx src/runbooks/xero/delete-item-by-code.ts",
+    "runbook:woo-item": "tsx src/runbooks/woo/get-item-by-code.ts",
+    "runbook:woo-items": "tsx src/runbooks/woo/get-items.ts",
     "runbook:generic-http": "tsx src/runbooks/generic-http.ts",
     "runbook:sqs": "tsx src/runbooks/sqs.ts",
     "runbook:sns": "tsx src/runbooks/sns.ts"

@@ -1,5 +1,5 @@
 import "./load-env.js";
-import { suite, TokenResponse } from "../index.js";
+import { suite, SuiteRunOption, TokenResponse } from "../index.js";
 
 await suite()
   .oauth({
@@ -20,4 +20,4 @@ await suite()
     console.log("claims:", claims);
     return claims;
   })
-  .run();
+  .run(SuiteRunOption.ThrowOnError);

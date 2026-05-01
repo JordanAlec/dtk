@@ -1,5 +1,5 @@
 import "./load-env.js";
-import { suite } from "../index.js";
+import { suite, SuiteRunOption } from "../index.js";
 
 await suite()
   .sqs({
@@ -13,4 +13,4 @@ await suite()
     console.log("messageId:", result.messageId);
     return result;
   })
-  .run();
+  .run(SuiteRunOption.ThrowOnError);

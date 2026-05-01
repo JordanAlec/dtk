@@ -1,5 +1,5 @@
 import "./load-env.js";
-import { suite } from "../index.js";
+import { suite, SuiteRunOption } from "../index.js";
 
 interface GitHubUser {
   login: string;
@@ -19,4 +19,4 @@ await suite()
     console.log(`followers: ${user.followers}`);
     return user;
   })
-  .run();
+  .run(SuiteRunOption.ThrowOnError);

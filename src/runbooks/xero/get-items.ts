@@ -1,6 +1,6 @@
-import "./load-env.js";
-import { suite } from "../index.js";
-import type { TokenResponse } from "../index.js";
+import "../load-env.js";
+import { suite, SuiteRunOption } from "../../index.js";
+import type { TokenResponse } from "../../index.js";
 
 await suite()
   .oauth({
@@ -15,10 +15,10 @@ await suite()
   .step("get-token",  async (ctx) => ctx.auth.clientCredentials())
   .step("get-items", async (ctx) => {
     const token = ctx.outputs["get-token"] as TokenResponse;
-    return ctx.services.xero.getItemByCode('MM-165', token.access_token);
+    return ctx.services.xero.getItems(token.access_token);
   })
   .step("log-items", async (ctx) => {
-    const item = ctx.outputs["get-items"];
-    console.log("Item details:", item);
+    const items = ctx.outputs["get-items"];
+    console.log("Item details:", items);
   })
-  .run();
+  .run(SuiteRunOption.ThrowOnError);
