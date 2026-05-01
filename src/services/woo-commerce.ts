@@ -1,5 +1,5 @@
 import { httpGet } from "../lib/http.js";
-import { WooCommerceConfig, WooCommerceProduct } from "../types/woo-commerce.js";
+import { WooCommerceConfig, WooCommerceProduct } from "../types.js";
 
 export function createWooCommerceService(config?: WooCommerceConfig) {
   return {

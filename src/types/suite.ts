@@ -3,7 +3,7 @@ import type { OAuthConfig, TokenResponse } from "./oauth.js";
 import type { XeroItem } from "./xero.js";
 import type { SendMessageResult, PublishResult } from "./aws.js";
 import { WooCommerceProduct } from "./woo-commerce.js";
-import { BasicAuthConfig } from "../index.js";
+import { BasicAuthConfig, BearerTokenConfig, OpenAiListModels, OpenAiResponse } from "../index.js";
 
 export type { HttpOptions };
 
@@ -13,6 +13,7 @@ export interface StepContext {
     clientCredentials(config?: OAuthConfig): Promise<TokenResponse>;
     getClaimValues(token: string): Record<string, string>;
     basicAuth(config?: BasicAuthConfig): Promise<string>;
+    bearerToken(config?: BearerTokenConfig): Promise<string>;
   };
   http: {
     get<T>(url: string, options?: HttpOptions): Promise<T>;
@@ -27,6 +28,10 @@ export interface StepContext {
     woo: {
       getProducts(perPage: number, page: number, basicAuthHeader: string): Promise<WooCommerceProduct[]>;
       getProductByCode(code: string, basicAuthHeader: string): Promise<WooCommerceProduct>;
+    },
+    openAi: {
+      listModels(bearerToken: string): Promise<OpenAiListModels>;
+      response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>;
     },
     sqs: {
       sendMessage(body: string, attributes?: Record<string, string>): Promise<SendMessageResult>;

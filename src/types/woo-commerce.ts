@@ -10,4 +10,5 @@ export interface WooCommerceProduct {
   regular_price: string;
   sale_price: string;
   stock_quantity: number | null;
+  // TODO: Add more properties as needed
 }

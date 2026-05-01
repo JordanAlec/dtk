@@ -1,6 +1,5 @@
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../../index.js";
-import { WooCommerceProduct } from "../../types/woo-commerce.js";
+import { WooCommerceProduct, suite, SuiteRunOption } from "../../index.js";
 
 const PER_PAGE = 10;
 const PAGE = 1;

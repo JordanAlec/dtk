@@ -9,6 +9,8 @@
     "runbook:xero-delete-item": "tsx src/runbooks/xero/delete-item-by-code.ts",
     "runbook:woo-item": "tsx src/runbooks/woo/get-item-by-code.ts",
     "runbook:woo-items": "tsx src/runbooks/woo/get-items.ts",
+    "runbook:open-ai-list-models": "tsx src/runbooks/open-ai/list-models.ts",
+    "runbook:open-ai-chat-response": "tsx src/runbooks/open-ai/chat-response.ts",
     "runbook:generic-http": "tsx src/runbooks/generic-http.ts",
     "runbook:sqs": "tsx src/runbooks/sqs.ts",
     "runbook:sns": "tsx src/runbooks/sns.ts"
