@@ -1,0 +1,19 @@
+{
+  "name": "dtk",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "runbook:auth-only": "tsx src/runbooks/auth-only.ts",
+    "runbook:xero": "tsx src/runbooks/xero.ts",
+    "runbook:generic-http": "tsx src/runbooks/generic-http.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
