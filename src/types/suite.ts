@@ -1,6 +1,7 @@
 import type { HttpOptions } from "../lib/http.js";
 import type { OAuthConfig, TokenResponse } from "./oauth.js";
 import type { XeroItem } from "./xero.js";
+import type { SendMessageResult, PublishResult } from "./aws.js";
 
 export type { HttpOptions };
 
@@ -17,6 +18,12 @@ export interface StepContext {
   services: {
     xero: {
       getItemByCode(code: string, bearerToken?: string): Promise<XeroItem>;
+    };
+    sqs: {
+      sendMessage(body: string, attributes?: Record<string, string>): Promise<SendMessageResult>;
+    };
+    sns: {
+      publish(message: string, subject?: string, attributes?: Record<string, string>): Promise<PublishResult>;
     };
   };
 }

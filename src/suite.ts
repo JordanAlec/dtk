@@ -2,12 +2,16 @@ import { clientCredentials } from "./lib/oauth.js";
 import { getClaimValues } from "./lib/token.js";
 import { httpGet, httpPost } from "./lib/http.js";
 import { createXeroService } from "./services/xero.js";
-import type { OAuthConfig, XeroConfig, Step, StepContext, StepFn } from "./types.js";
+import { createSqsService } from "./services/sqs.js";
+import { createSnsService } from "./services/sns.js";
+import type { OAuthConfig, XeroConfig, SqsConfig, SnsConfig, Step, StepContext, StepFn } from "./types.js";
 
 class TestSuite {
   private steps: Step[] = [];
   private oauthConfig?: OAuthConfig;
   private xeroConfig?: XeroConfig;
+  private sqsConfig?: SqsConfig;
+  private snsConfig?: SnsConfig;
 
   oauth(config: OAuthConfig): this {
     this.oauthConfig = config;
@@ -16,6 +20,16 @@ class TestSuite {
 
   xero(config: XeroConfig): this {
     this.xeroConfig = config;
+    return this;
+  }
+
+  sqs(config: SqsConfig): this {
+    this.sqsConfig = config;
+    return this;
+  }
+
+  sns(config: SnsConfig): this {
+    this.snsConfig = config;
     return this;
   }
 
@@ -38,6 +52,8 @@ class TestSuite {
       },
       services: {
         xero: createXeroService(this.xeroConfig),
+        sqs: createSqsService(this.sqsConfig),
+        sns: createSnsService(this.snsConfig),
       },
     };
   }
