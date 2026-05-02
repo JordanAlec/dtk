@@ -1,11 +1,12 @@
 import type { HttpOptions } from "../lib/http.js";
 import type { OAuthConfig, TokenResponse } from "./oauth.js";
-import type { SendMessageResult, PublishResult } from "./aws.js";
-import type { BasicAuthConfig } from "./basic-auth.js";
-import type { BearerTokenConfig } from "./bearer-token.js";
-import type { OpenAiListModels, OpenAiResponse } from "./open-ai.js";
+// dtk:type-imports
 
 export type { HttpOptions };
+
+export interface BasicAuthConfig { username: string; password: string; }
+export interface BearerTokenConfig { token: string; prefix: string; }
+export type { OAuthConfig, TokenResponse };
 
 export interface StepContext {
   outputs: Record<string, unknown>;
@@ -20,16 +21,7 @@ export interface StepContext {
     post<TBody, TResponse>(url: string, body: TBody, options?: HttpOptions): Promise<TResponse>;
   };
   services: {
-    openAi: {
-      listModels(bearerToken: string): Promise<OpenAiListModels>;
-      response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>;
-    };
-    sqs: {
-      sendMessage(body: string, attributes?: Record<string, string>): Promise<SendMessageResult>;
-    };
-    sns: {
-      publish(message: string, subject?: string, attributes?: Record<string, string>): Promise<PublishResult>;
-    };
+    // dtk:service-types
   };
 }
 

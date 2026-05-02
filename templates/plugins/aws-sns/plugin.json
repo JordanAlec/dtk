@@ -1,0 +1,29 @@
+{
+  "name": "aws-sns",
+  "description": "AWS SNS -- publish messages to a topic",
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.0.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/sns.ts" },
+    { "src": "types.ts", "dest": "src/types/aws-sns.ts" },
+    { "src": "service.test.ts", "dest": "src/services/sns.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createSnsService } from \"./services/sns.js\";",
+        "import type { SnsConfig } from \"./types/aws-sns.js\";"
+      ],
+      "configs": "  private snsConfig?: SnsConfig;",
+      "methods": "  sns(config: SnsConfig): this { this.snsConfig = config; return this; }",
+      "services": "        sns: createSnsService(this.snsConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { SnsConfig, PublishResult } from \"./aws-sns.js\";",
+      "service-types": "    sns: { publish(message: string, subject?: string, attributes?: Record<string, string>): Promise<PublishResult>; };"
+    }
+  }
+}

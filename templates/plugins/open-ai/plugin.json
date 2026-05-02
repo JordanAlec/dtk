@@ -1,0 +1,26 @@
+{
+  "name": "open-ai",
+  "description": "OpenAI -- list models and send responses",
+  "files": [
+    { "src": "service.ts", "dest": "src/services/open-ai.ts" },
+    { "src": "types.ts", "dest": "src/types/open-ai.ts" },
+    { "src": "service.test.ts", "dest": "src/services/open-ai.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createOpenAIService } from \"./services/open-ai.js\";",
+        "import type { OpenAiConfig } from \"./types/open-ai.js\";"
+      ],
+      "configs": "  private openAiConfig?: OpenAiConfig;",
+      "methods": "  openAi(config: OpenAiConfig): this { this.openAiConfig = config; return this; }",
+      "services": "        openAi: createOpenAIService(this.openAiConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { OpenAiConfig, OpenAiListModels, OpenAiResponse } from \"./open-ai.js\";",
+      "service-types": "    openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>; };"
+    }
+  }
+}

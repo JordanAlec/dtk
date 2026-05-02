@@ -1,0 +1,29 @@
+{
+  "name": "aws-sqs",
+  "description": "AWS SQS -- send messages to a queue",
+  "dependencies": {
+    "@aws-sdk/client-sqs": "^3.0.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/sqs.ts" },
+    { "src": "types.ts", "dest": "src/types/aws-sqs.ts" },
+    { "src": "service.test.ts", "dest": "src/services/sqs.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createSqsService } from \"./services/sqs.js\";",
+        "import type { SqsConfig } from \"./types/aws-sqs.js\";"
+      ],
+      "configs": "  private sqsConfig?: SqsConfig;",
+      "methods": "  sqs(config: SqsConfig): this { this.sqsConfig = config; return this; }",
+      "services": "        sqs: createSqsService(this.sqsConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { SqsConfig, SendMessageResult } from \"./aws-sqs.js\";",
+      "service-types": "    sqs: { sendMessage(body: string, attributes?: Record<string, string>): Promise<SendMessageResult>; };"
+    }
+  }
+}

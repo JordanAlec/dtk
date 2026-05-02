@@ -2,27 +2,35 @@
   "name": "dtk",
   "version": "0.0.1",
   "type": "module",
+  "bin": {
+    "dtk": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
   "scripts": {
+    "build": "tsc",
     "runbook:oauth-only": "tsx src/runbooks/oauth-only.ts",
-    "runbook:xero-item": "tsx src/runbooks/xero/get-item-by-code.ts",
-    "runbook:xero-items": "tsx src/runbooks/xero/get-items.ts",
-    "runbook:xero-delete-item": "tsx src/runbooks/xero/delete-item-by-code.ts",
-    "runbook:woo-item": "tsx src/runbooks/woo/get-item-by-code.ts",
-    "runbook:woo-items": "tsx src/runbooks/woo/get-items.ts",
     "runbook:open-ai-list-models": "tsx src/runbooks/open-ai/list-models.ts",
     "runbook:open-ai-chat-response": "tsx src/runbooks/open-ai/chat-response.ts",
     "runbook:generic-http": "tsx src/runbooks/generic-http.ts",
     "runbook:sqs": "tsx src/runbooks/sqs.ts",
-    "runbook:sns": "tsx src/runbooks/sns.ts"
+    "runbook:sns": "tsx src/runbooks/sns.ts",
+    "test": "node node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "^3.1040.0",
     "@aws-sdk/client-sqs": "^3.1040.0",
     "axios": "^1.6.0",
+    "commander": "^14.0.3",
     "dotenv": "^16.4.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   }

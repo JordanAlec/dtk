@@ -1,416 +1,611 @@
 # dtk
 
-Developer Tool Kit: declarative TypeScript runbooks for orchestrating multi-step API workflows.
-
-Provides a fluent builder API to chain OAuth authentication, HTTP calls, and service interactions into readable, reusable test workflows.
+A CLI scaffolding tool for generating self-contained TypeScript runbook projects. Install dtk globally, scaffold a project, add service plugins, and write runbooks. Your generated project has no runtime dependency on dtk -- you own all the files.
 
 ---
 
-## Quick Start
+## Table of Contents
+
+1. [Installation](#installation)
+2. [dtk init](#dtk-init)
+3. [dtk add](#dtk-add)
+4. [Available plugins](#available-plugins)
+5. [Writing runbooks](#writing-runbooks)
+6. [Writing a custom service](#writing-a-custom-service)
+7. [Creating a new plugin](#creating-a-new-plugin)
+8. [Generated project structure](#generated-project-structure)
+9. [dtk source structure](#dtk-source-structure)
+
+---
+
+## Installation
+
+Clone and link globally:
 
 ```bash
+git clone <repo-url>
+cd dtk
 npm install
-cp .env.template .env.local   # fill in your credentials
-npm run runbook:oauth-only
+npm run build
+npm link
 ```
 
----
-
-## Environment Setup
-
-Copy `.env.template` to `.env.local` and populate values. `.env.local` is gitignored and overrides `.env`.
-
-```env
-# OAuth
-CLIENT_ID=''
-CLIENT_SECRET=''
-TOKEN_URL=''
-SCOPE=''
-
-# Xero
-XERO_BASE_URL=''
-
-# WooCommerce
-WOO_BASE_URL=''
-WOO_CONSUMER_KEY=''
-WOO_CONSUMER_SECRET=''
-
-# OpenAI
-OPENAI_BASE_URL=''
-OPENAI_API_KEY=''
-
-# AWS
-AWS_REGION=''
-AWS_ACCESS_KEY_ID=''
-AWS_SECRET_ACCESS_KEY=''
-SQS_QUEUE_URL=''
-SNS_TOPIC_ARN=''
-```
-
-The AWS SDK picks up `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_REGION` from the environment automatically.
-
----
-
-## Running Runbooks
+Verify it works:
 
 ```bash
-npm run runbook:oauth-only              # OAuth token retrieval only
-npm run runbook:xero-items              # token -> Xero all items
-npm run runbook:xero-item               # token -> Xero item by code
-npm run runbook:xero-delete-item        # token -> delete Xero item by code
-npm run runbook:woo-items               # basic auth -> WooCommerce product list
-npm run runbook:woo-item                # basic auth -> WooCommerce product by SKU
-npm run runbook:open-ai-list-models     # bearer token -> OpenAI list models
-npm run runbook:open-ai-chat-response   # bearer token -> OpenAI chat response
-npm run runbook:sqs                     # send a message to SQS
-npm run runbook:sns                     # publish a message to SNS
-npm run runbook:generic-http            # unauthenticated HTTP call (GitHub example)
+dtk --help
+```
+
+To uninstall:
+
+```bash
+npm unlink -g dtk
 ```
 
 ---
 
-## How It Works
+## dtk init
 
-### Fluent Builder
+Scaffolds a new project in the current directory.
 
-Each runbook creates a suite, chains service config and steps, then calls `.run()`:
+```bash
+mkdir my-project
+cd my-project
+dtk init
+npm install
+```
 
-```typescript
+Run the included example runbook to verify the setup:
+
+```bash
+npm run runbook:example
+```
+
+Expected output:
+
+```
+login: torvalds
+name: Linus Torvalds
+[OK] fetch-github-user
+```
+
+---
+
+## dtk add
+
+Adds a service plugin to your project. Run from inside your generated project directory.
+
+```bash
+dtk add <plugin>
+```
+
+Each plugin:
+- Copies a service file into `src/services/`
+- Copies a types file into `src/types/`
+- Patches `src/suite.ts` to wire the service in (imports, config field, builder method, service instance)
+- Patches `src/types/suite.ts` to add the service type shape to `StepContext`
+- Appends required env vars to `.env.template`
+- Creates an example runbook at `src/runbooks/<plugin>.ts`
+- Adds a `runbook:<plugin>` script to `package.json`
+- Runs `npm install` for any required dependencies automatically
+
+Running `dtk add` on a plugin that has already been added is safe -- files and patches are not duplicated.
+
+---
+
+## Available plugins
+
+### aws-sqs
+
+Sends messages to an AWS SQS queue.
+
+```bash
+dtk add aws-sqs
+```
+
+Env vars appended to `.env.template`:
+
+```
+SQS_QUEUE_URL=
+AWS_REGION=
+```
+
+Usage:
+
+```ts
 await suite()
-  .oauth({ clientId, clientSecret, tokenUrl, scope })
-  .xero({ baseUrl })
-  .step("get-token", async (ctx) => ctx.auth.clientCredentials())
-  .step("get-item", async (ctx) => {
-    const token = ctx.outputs["get-token"] as TokenResponse;
-    return ctx.services.xero.getItemByCode("ITEM-001", token.access_token);
+  .sqs({
+    queueUrl: process.env.SQS_QUEUE_URL!,
+    region: process.env.AWS_REGION!,
+  })
+  .step("send", async (ctx) => {
+    const result = await ctx.services.sqs.sendMessage("hello world", {
+      source: "my-runbook",
+    });
+    console.log("messageId:", result.messageId);
+    return result;
   })
   .run(SuiteRunOption.ThrowOnError);
 ```
 
-- Config methods (`.oauth()`, `.basicAuth()`, `.bearerToken()`, `.xero()`, `.woo()`, `.openAi()`, `.sqs()`, `.sns()`) can be called in any order
-- Steps execute sequentially in the order they are defined
-- `.run(SuiteRunOption)` is the single entry point -- pass `ThrowOnError` to halt and throw on failure, or `ContinueOnError` to log and continue
-
-### Shared Step Context
-
-Every step receives `ctx: StepContext`:
-
-```typescript
-ctx.outputs     // results from all prior steps, keyed by step name
-ctx.auth        // auth utilities: clientCredentials, basicAuth, bearerToken, getClaimValues
-ctx.http        // generic HTTP client
-ctx.services    // registered service instances (xero, woo, openAi, sqs, sns)
-```
-
-Outputs from prior steps are accessed by name:
-
-```typescript
-const token = ctx.outputs["get-token"] as TokenResponse;
-```
-
-### Step Execution
-
-Each step returns a value that is stored in `ctx.outputs` under its name. If a step throws, the suite logs `[FAIL] step-name: <message>` and halts.
+AWS credentials are resolved from the environment via the SDK default provider chain (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
 
 ---
 
-## Services
+### aws-sns
 
-### OAuth (`ctx.auth.clientCredentials`)
+Publishes messages to an AWS SNS topic.
 
-Client credentials flow over `application/x-www-form-urlencoded`.
-
-```typescript
-const token = await ctx.auth.clientCredentials();
-// or override config per-call:
-const token = await ctx.auth.clientCredentials({ clientId, clientSecret, tokenUrl });
+```bash
+dtk add aws-sns
 ```
 
-JWT claim extraction:
+Env vars appended to `.env.template`:
 
-```typescript
-const claims = ctx.auth.getClaimValues(token.access_token);
+```
+SNS_TOPIC_ARN=
+AWS_REGION=
 ```
 
-Configure with `.oauth()`:
+Usage:
 
-```typescript
+```ts
+await suite()
+  .sns({
+    topicArn: process.env.SNS_TOPIC_ARN!,
+    region: process.env.AWS_REGION!,
+  })
+  .step("publish", async (ctx) => {
+    const result = await ctx.services.sns.publish(
+      "hello world",
+      "optional subject",
+      { source: "my-runbook" }
+    );
+    console.log("messageId:", result.messageId);
+    return result;
+  })
+  .run(SuiteRunOption.ThrowOnError);
+```
+
+---
+
+### open-ai
+
+Lists models and sends responses via the OpenAI API.
+
+```bash
+dtk add open-ai
+```
+
+Env vars appended to `.env.template`:
+
+```
+OPENAI_API_KEY=
+```
+
+Usage:
+
+```ts
+await suite()
+  .openAi({ baseUrl: "https://api.openai.com" })
+  .step("list-models", async (ctx) => {
+    const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
+    return ctx.services.openAi.listModels(token);
+  })
+  .step("send-response", async (ctx) => {
+    const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
+    return ctx.services.openAi.response(token, "gpt-4o-mini", "text", "Say hello.");
+  })
+  .run(SuiteRunOption.ThrowOnError);
+```
+
+---
+
+## Writing runbooks
+
+A runbook is a TypeScript file that uses the `suite()` builder to chain steps and run them in sequence.
+
+```ts
+import "../load-env.js";
+import { suite, SuiteRunOption } from "../suite.js";
+
+await suite()
+  .step("step-one", async (ctx) => {
+    const data = await ctx.http.get<{ id: number }>("https://api.example.com/thing/1");
+    console.log("id:", data.id);
+    return data;
+  })
+  .step("step-two", async (ctx) => {
+    const prev = ctx.outputs["step-one"] as { id: number };
+    console.log("previous id:", prev.id);
+  })
+  .run(SuiteRunOption.ThrowOnError);
+```
+
+Add a script to `package.json` to run it:
+
+```json
+"runbook:my-runbook": "tsx src/runbooks/my-runbook.ts"
+```
+
+```bash
+npm run runbook:my-runbook
+```
+
+### Run options
+
+| Option | Behaviour |
+|---|---|
+| `SuiteRunOption.ThrowOnError` | Stops on first failure and throws |
+| `SuiteRunOption.ContinueOnError` | Logs the failure and moves to the next step |
+
+### Step context
+
+Every step receives `ctx`:
+
+| Property | Description |
+|---|---|
+| `ctx.outputs` | Return values from all previous steps, keyed by step name |
+| `ctx.auth` | Auth helpers: `clientCredentials`, `basicAuth`, `bearerToken`, `getClaimValues` |
+| `ctx.http` | Generic HTTP client: `get`, `post` |
+| `ctx.services` | All wired service instances (populated by plugins or custom services) |
+
+### Auth
+
+**OAuth client credentials:**
+
+```ts
 .oauth({
   clientId: process.env.CLIENT_ID!,
   clientSecret: process.env.CLIENT_SECRET!,
   tokenUrl: process.env.TOKEN_URL!,
-  scope: process.env.SCOPE,
+  scope: "openid",
+})
+.step("fetch", async (ctx) => {
+  const token = await ctx.auth.clientCredentials();
+  return ctx.http.get("https://api.example.com/data", {
+    headers: { Authorization: `Bearer ${token.access_token}` },
+  });
+})
+```
+
+**Basic auth:**
+
+```ts
+.basicAuth({ username: process.env.USER!, password: process.env.PASS! })
+.step("fetch", async (ctx) => {
+  const header = await ctx.auth.basicAuth();
+  return ctx.http.get("https://api.example.com/data", {
+    headers: { Authorization: header },
+  });
+})
+```
+
+**Bearer token:**
+
+```ts
+.bearerToken({ token: process.env.API_TOKEN!, prefix: "Bearer" })
+.step("fetch", async (ctx) => {
+  const header = await ctx.auth.bearerToken();
+  return ctx.http.get("https://api.example.com/data", {
+    headers: { Authorization: header },
+  });
+})
+```
+
+**JWT claim extraction:**
+
+```ts
+const claims = ctx.auth.getClaimValues(token.access_token);
+```
+
+### Passing data between steps
+
+Each step's return value is stored in `ctx.outputs` under the step name:
+
+```ts
+.step("get-user", async (ctx) => {
+  return ctx.http.get<User>("https://api.example.com/user/1");
+})
+.step("use-user", async (ctx) => {
+  const user = ctx.outputs["get-user"] as User;
+  console.log(user.name);
 })
 ```
 
 ---
 
-### Basic Auth (`ctx.auth.basicAuth`)
+## Writing a custom service
 
-Encodes `username:password` as a Base64 `Basic` header string.
+If there is no plugin for the service you need, wire one in manually across four files.
 
-```typescript
-const header = await ctx.auth.basicAuth();
-// use directly as an Authorization header value
-```
+### 1. Create `src/services/my-service.ts`
 
-Configure with `.basicAuth()`:
+```ts
+import { httpGet, httpPost } from "../lib/http.js";
 
-```typescript
-.basicAuth({
-  username: process.env.WOO_CONSUMER_KEY!,
-  password: process.env.WOO_CONSUMER_SECRET!,
-})
-```
+export interface MyServiceConfig {
+  baseUrl: string;
+}
 
----
-
-### Bearer Token (`ctx.auth.bearerToken`)
-
-Constructs a bearer-style `Authorization` header string from a static token and a prefix.
-
-```typescript
-const header = await ctx.auth.bearerToken();
-// returns "<prefix> <token>", e.g. "Bearer sk-abc123"
-```
-
-Configure with `.bearerToken()`:
-
-```typescript
-.bearerToken({
-  token: process.env.OPENAI_API_KEY!,
-  prefix: 'Bearer',
-})
-```
-
----
-
-### Generic HTTP (`ctx.http`)
-
-Make any HTTP call without registering a service:
-
-```typescript
-interface MyResponse { id: string; name: string; }
-
-const data = await ctx.http.get<MyResponse>("https://api.example.com/resource", {
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-const result = await ctx.http.post<RequestBody, MyResponse>(
-  "https://api.example.com/resource",
-  { key: "value" },
-  { headers: { "Content-Type": "application/json" } }
-);
-```
-
-No builder method needed -- `ctx.http` is always available on every step.
-
----
-
-### Xero (`ctx.services.xero`)
-
-```typescript
-const items = await ctx.services.xero.getItems(token.access_token);
-const item = await ctx.services.xero.getItemByCode("ITEM-CODE", token.access_token);
-const status = await ctx.services.xero.deleteItem("ITEM-ID", token.access_token);
-```
-
-Configure with `.xero()`:
-
-```typescript
-.xero({ baseUrl: process.env.XERO_BASE_URL! })
-```
-
----
-
-### WooCommerce (`ctx.services.woo`)
-
-Uses Basic Auth. Pass the encoded header string from `ctx.auth.basicAuth()` to each call.
-
-```typescript
-const products = await ctx.services.woo.getProducts(10, 1, basicAuthHeader);
-const product = await ctx.services.woo.getProductByCode("SKU-001", basicAuthHeader);
-```
-
-Configure with `.woo()`:
-
-```typescript
-.woo({ baseUrl: process.env.WOO_BASE_URL! })
-```
-
----
-
-### OpenAI (`ctx.services.openAi`)
-
-Uses Bearer Token auth. Pass the bearer header string from `ctx.auth.bearerToken()` to each call.
-
-```typescript
-const models = await ctx.services.openAi.listModels(bearerToken);
-const response = await ctx.services.openAi.response(bearerToken, "gpt-4.1-nano", "json_object", "Hi JSON!");
-```
-
-Configure with `.openAi()`:
-
-```typescript
-.openAi({ baseUrl: process.env.OPENAI_BASE_URL! })
-```
-
----
-
-### SQS (`ctx.services.sqs`)
-
-```typescript
-const result = await ctx.services.sqs.sendMessage(
-  JSON.stringify({ event: "order-placed", orderId: "123" }),
-  { source: "dtk" }   // optional message attributes
-);
-console.log(result.messageId);
-```
-
-Configure with `.sqs()`:
-
-```typescript
-.sqs({
-  queueUrl: process.env.SQS_QUEUE_URL!,
-  region: process.env.AWS_REGION!,
-})
-```
-
-Credentials are resolved from the environment via the AWS SDK default credential provider chain.
-
----
-
-### SNS (`ctx.services.sns`)
-
-```typescript
-const result = await ctx.services.sns.publish(
-  JSON.stringify({ event: "user-signup" }),
-  "Optional subject",     // optional, useful for email subscriptions
-  { source: "dtk" }       // optional message attributes
-);
-console.log(result.messageId);
-```
-
-Configure with `.sns()`:
-
-```typescript
-.sns({
-  topicArn: process.env.SNS_TOPIC_ARN!,
-  region: process.env.AWS_REGION!,
-})
-```
-
----
-
-## Adding a New Service
-
-**1. Define types** in `src/types/<service>.ts`:
-
-```typescript
-export interface MyServiceConfig { baseUrl: string; }
-export interface MyResource { id: string; name: string; }
-```
-
-**2. Export from the barrel** in `src/types.ts`:
-
-```typescript
-export * from "./types/my-service.js";
-```
-
-**3. Implement the service factory** in `src/services/<service>.ts`:
-
-```typescript
 export function createMyService(config?: MyServiceConfig) {
   return {
-    getResource: async (id: string, bearerToken?: string): Promise<MyResource> => {
-      const headers: Record<string, string> = bearerToken
-        ? { Authorization: `Bearer ${bearerToken}` }
-        : {};
-      return httpGet<MyResource>(`${config!.baseUrl}/resources/${id}`, { headers });
+    getItem: async (id: number): Promise<{ id: number; name: string }> => {
+      return httpGet(`${config!.baseUrl}/items/${id}`);
+    },
+    createItem: async (name: string): Promise<{ id: number }> => {
+      return httpPost(`${config!.baseUrl}/items`, { name });
     },
   };
 }
 ```
 
-**4. Add the builder method** to `src/suite.ts`:
+### 2. Add the type to `src/types/suite.ts`
 
-```typescript
-private myServiceConfig?: MyServiceConfig;
+Add your config interface and the service shape to `StepContext`, using the existing sentinel comments as your guide for placement:
 
-myService(config: MyServiceConfig): this {
-  this.myServiceConfig = config;
-  return this;
-}
-```
+```ts
+export interface MyServiceConfig { baseUrl: string; }
 
-**5. Wire into `buildContext`** in `src/suite.ts`:
-
-```typescript
-services: {
-  myService: createMyService(this.myServiceConfig),
-}
-```
-
-**6. Add to `StepContext`** in `src/types/suite.ts`:
-
-```typescript
+// inside StepContext.services:
 services: {
   myService: {
-    getResource(id: string, bearerToken?: string): Promise<MyResource>;
+    getItem(id: number): Promise<{ id: number; name: string }>;
+    createItem(name: string): Promise<{ id: number }>;
   };
-}
+  // dtk:service-types  <-- keep this, leave it in place
+};
 ```
 
-**7. Add a runbook script** in `package.json`:
+### 3. Wire into `src/suite.ts`
 
-```json
-"runbook:my-workflow": "tsx src/runbooks/my-workflow.ts"
+Add the import near the top (before `// dtk:imports`):
+
+```ts
+import { createMyService } from "./services/my-service.js";
+import type { MyServiceConfig } from "./services/my-service.js";
+```
+
+Add a private field inside the class (before `// dtk:configs`):
+
+```ts
+private myServiceConfig?: MyServiceConfig;
+```
+
+Add a builder method (before `// dtk:methods`):
+
+```ts
+myService(config: MyServiceConfig): this { this.myServiceConfig = config; return this; }
+```
+
+Add the service instance in `buildContext` (before `// dtk:services`):
+
+```ts
+myService: createMyService(this.myServiceConfig),
+```
+
+### 4. Use it in a runbook
+
+```ts
+await suite()
+  .myService({ baseUrl: "https://api.example.com" })
+  .step("get-item", async (ctx) => {
+    return ctx.services.myService.getItem(1);
+  })
+  .run(SuiteRunOption.ThrowOnError);
 ```
 
 ---
 
-## Project Structure
+## Creating a new plugin
+
+A plugin is a directory inside `templates/plugins/` containing a manifest, service file, types file, env file, and example runbook. Once created, `dtk add <plugin>` handles everything else automatically.
+
+### 1. Create the plugin directory
+
+```
+templates/plugins/my-plugin/
+  plugin.json
+  service.ts
+  types.ts
+  env.txt
+  example.ts
+```
+
+### 2. Define types in `types.ts`
+
+```ts
+export interface MyPluginConfig {
+  baseUrl: string;
+}
+
+export interface MyPluginResult {
+  id: string;
+  status: string;
+}
+```
+
+### 3. Implement the service in `service.ts`
+
+Import from the generated project's paths (e.g. `../lib/http.js`, `../types/my-plugin.js`):
+
+```ts
+import { httpGet, httpPost } from "../lib/http.js";
+import type { MyPluginConfig, MyPluginResult } from "../types/my-plugin.js";
+
+export function createMyPluginService(config?: MyPluginConfig) {
+  return {
+    doThing: async (payload: string): Promise<MyPluginResult> => {
+      return httpPost(`${config!.baseUrl}/things`, { payload });
+    },
+  };
+}
+```
+
+### 4. List env vars in `env.txt`
+
+One variable per line, no values:
+
+```
+MY_PLUGIN_BASE_URL=
+MY_PLUGIN_API_KEY=
+```
+
+### 5. Write an example runbook in `example.ts`
+
+The example is copied to `src/runbooks/<plugin>.ts` in the user's project. Imports are relative to `src/runbooks/`:
+
+```ts
+import "../load-env.js";
+import { suite, SuiteRunOption } from "../suite.js";
+
+await suite()
+  .myPlugin({
+    baseUrl: process.env.MY_PLUGIN_BASE_URL!,
+  })
+  .step("do-thing", async (ctx) => {
+    const result = await ctx.services.myPlugin.doThing("hello");
+    console.log("result:", result.status);
+    return result;
+  })
+  .run(SuiteRunOption.ThrowOnError);
+```
+
+### 6. Write `plugin.json`
+
+The manifest drives everything `dtk add` does. The `patches` keys must exactly match the sentinel comment names in the generated `suite.ts` and `types/suite.ts`.
+
+```json
+{
+  "name": "my-plugin",
+  "description": "My plugin -- does a thing",
+  "dependencies": {
+    "some-sdk": "^1.0.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/my-plugin.ts" },
+    { "src": "types.ts",   "dest": "src/types/my-plugin.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createMyPluginService } from \"./services/my-plugin.js\";",
+        "import type { MyPluginConfig } from \"./types/my-plugin.js\";"
+      ],
+      "configs":  "  private myPluginConfig?: MyPluginConfig;",
+      "methods":  "  myPlugin(config: MyPluginConfig): this { this.myPluginConfig = config; return this; }",
+      "services": "        myPlugin: createMyPluginService(this.myPluginConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports":  "import type { MyPluginConfig, MyPluginResult } from \"./my-plugin.js\";",
+      "service-types": "    myPlugin: { doThing(payload: string): Promise<MyPluginResult>; };"
+    }
+  }
+}
+```
+
+### 7. Register the plugin in `src/cli/add.ts`
+
+Add your plugin key to `PLUGIN_MAP`:
+
+```ts
+const PLUGIN_MAP: Record<string, string> = {
+  'aws-sqs':   'aws-sqs',
+  'aws-sns':   'aws-sns',
+  'open-ai':   'open-ai',
+  'my-plugin': 'my-plugin',  // add this
+};
+```
+
+### 8. Rebuild dtk
+
+```bash
+npm run build
+```
+
+`dtk add my-plugin` is now available.
+
+### Sentinel reference
+
+The `patches` keys in `plugin.json` correspond to these comments in the generated project:
+
+| Sentinel | File | What gets injected |
+|---|---|---|
+| `imports` | `src/suite.ts` | Service and type imports |
+| `configs` | `src/suite.ts` | Private config field on the class |
+| `methods` | `src/suite.ts` | Builder method (e.g. `.myPlugin(config)`) |
+| `services` | `src/suite.ts` | Service instance in `buildContext` |
+| `type-imports` | `src/types/suite.ts` | Plugin type imports |
+| `service-types` | `src/types/suite.ts` | Service shape on `StepContext.services` |
+
+Each sentinel value can be a single string or an array of strings. Arrays inject multiple lines before the same sentinel, in order. Injection is idempotent -- if a line is already present it is not duplicated.
+
+---
+
+## Generated project structure
+
+This is the structure inside a project created by `dtk init` after running `dtk add aws-sqs`:
+
+```
+my-project/
+  src/
+    suite.ts              # TestSuite builder and runner -- do not delete sentinel comments
+    load-env.ts           # dotenv bootstrap -- import this first in every runbook
+    lib/
+      http.ts             # httpGet / httpPost / httpDelete (axios wrapper)
+      oauth.ts            # client credentials OAuth flow
+      basic-auth.ts       # base64 Basic auth header builder
+      bearer-token.ts     # Bearer token header builder
+      token.ts            # JWT claim decoder
+    types/
+      suite.ts            # StepContext, SuiteRunOption, auth types -- do not delete sentinel comments
+      oauth.ts            # OAuthConfig, TokenResponse
+      aws-sqs.ts          # SqsConfig, SendMessageResult (added by plugin)
+    services/
+      sqs.ts              # SQS service factory (added by plugin)
+    runbooks/
+      example.ts          # starter runbook (GitHub API)
+      aws-sqs.ts          # example runbook (added by plugin)
+  .env.template           # env var list -- copy to .env and fill in values
+  tsconfig.json
+  package.json
+```
+
+---
+
+## dtk source structure
+
+This section is for contributors and plugin authors working inside the dtk repo itself.
 
 ```
 src/
-  index.ts              # public entry point
-  suite.ts              # TestSuite fluent builder and runner
-  types.ts              # barrel re-export for all types
-  lib/
-    http.ts             # httpGet / httpPost (axios wrapper)
-    oauth.ts            # client credentials OAuth flow
-    basic-auth.ts       # basic auth header builder
-    bearer-token.ts     # bearer token header builder
-    token.ts            # JWT claim extraction
-  types/
-    oauth.ts            # OAuthConfig, TokenResponse
-    basic-auth.ts       # BasicAuthConfig
-    bearer-token.ts     # BearerTokenConfig
-    aws.ts              # SqsConfig, SnsConfig, result types
-    xero.ts             # XeroConfig, XeroItem
-    woo-commerce.ts     # WooCommerceConfig, WooCommerceProduct
-    open-ai.ts          # OpenAiConfig, OpenAiListModels, OpenAiResponse
-    suite.ts            # StepContext, StepFn, Step, SuiteRunOption
-  services/
-    xero.ts             # Xero service factory
-    woo-commerce.ts     # WooCommerce service factory
-    open-ai.ts          # OpenAI service factory
-    sqs.ts              # SQS service factory
-    sns.ts              # SNS service factory
-  runbooks/
-    load-env.ts         # dotenv loader (.env -> .env.local override)
-    oauth-only.ts
-    generic-http.ts
-    sqs.ts
-    sns.ts
-    xero/
-      get-items.ts
-      get-item-by-code.ts
-      delete-item-by-code.ts
-    woo/
-      get-items.ts
-      get-item-by-code.ts
+  cli.ts                  # entry point -- registers init and add commands
+  cli/
+    init.ts               # dtk init handler -- copies templates/init/src + root config files
+    add.ts                # dtk add handler -- reads plugin.json, copies files, patches, installs
+    utils/
+      patch.ts            # sentinel injection utility (injectAtSentinel)
+      copy.ts             # file copy helper with auto-mkdir
+templates/
+  init/                   # scaffold copied by dtk init
+    src/                  # the TypeScript source that lands in the user's src/
+      suite.ts
+      load-env.ts
+      lib/
+      types/
+      runbooks/
+    .env.template
+    tsconfig.json
+    package.json
+  plugins/                # one directory per plugin
+    aws-sqs/
+      plugin.json         # manifest: files, patches, env, example, dependencies
+      service.ts          # service factory (copied to src/services/)
+      types.ts            # types (copied to src/types/)
+      env.txt             # env var fragment (appended to .env.template)
+      example.ts          # example runbook (copied to src/runbooks/)
+    aws-sns/
     open-ai/
-      list-models.ts
-      chat-response.ts
 ```
