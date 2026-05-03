@@ -1,4 +1,4 @@
-import { OpenAiConfig, OpenAiListModels, OpenAiResponse, OpenAiResponseBody } from "../types/open-ai.js";
+import type { OpenAiConfig, OpenAiListModels, OpenAiResponse, OpenAiResponseBody } from "../types/open-ai.js";
 import { httpGet, httpPost } from "../lib/http.js";
 
 export function createOpenAIService(config?: OpenAiConfig) {

@@ -1,7 +1,7 @@
-import { createOpenAIService } from './open-ai.js';
+import { createOpenAIService } from './service.js';
 
-jest.mock('../lib/http.js');
-import { httpGet, httpPost } from '../lib/http.js';
+jest.mock('../../init/src/lib/http.js');
+import { httpGet, httpPost } from '../../init/src/lib/http.js';
 
 const mockHttpGet = jest.mocked(httpGet);
 const mockHttpPost = jest.mocked(httpPost);

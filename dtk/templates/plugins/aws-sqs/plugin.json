@@ -11,6 +11,14 @@
   ],
   "env": "env.txt",
   "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/aws-sqs.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./sqs.js" }
+    ]
+  },
   "patches": {
     "src/suite.ts": {
       "imports": [

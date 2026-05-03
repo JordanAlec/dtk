@@ -1,4 +1,4 @@
-import { createSnsService } from './sns.js';
+import { createSnsService } from './service.js';
 
 jest.mock('@aws-sdk/client-sns');
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';

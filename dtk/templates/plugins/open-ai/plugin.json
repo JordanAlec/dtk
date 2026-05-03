@@ -8,6 +8,16 @@
   ],
   "env": "env.txt",
   "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/open-ai.js" },
+      { "from": "../../init/src/lib/http.js", "to": "../lib/http.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./open-ai.js" },
+      { "from": "../../init/src/lib/http.js", "to": "../lib/http.js" }
+    ]
+  },
   "patches": {
     "src/suite.ts": {
       "imports": [

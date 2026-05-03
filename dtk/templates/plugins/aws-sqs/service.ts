@@ -1,5 +1,5 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
-import type { SqsConfig, SendMessageResult } from "../types/aws-sqs.js";
+import type { SqsConfig, SendMessageResult } from "./types.js";
 
 export function createSqsService(config?: SqsConfig) {
   return {

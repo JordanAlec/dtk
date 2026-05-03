@@ -1,4 +1,4 @@
-import { createSqsService } from './sqs.js';
+import { createSqsService } from './service.js';
 
 jest.mock('@aws-sdk/client-sqs');
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';

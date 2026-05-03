@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { readFile, writeFile, cp, mkdir, access } from 'fs/promises';
+import { readFile, writeFile, mkdir, access } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -14,6 +14,11 @@ const PLUGIN_MAP: Record<string, string> = {
   'open-ai': 'open-ai',
 };
 
+interface PluginTransform {
+  from: string;
+  to: string;
+}
+
 interface PluginManifest {
   name: string;
   description: string;
@@ -21,6 +26,7 @@ interface PluginManifest {
   files: Array<{ src: string; dest: string }>;
   env?: string;
   example?: string;
+  transforms?: Record<string, PluginTransform[]>;
   patches: Record<string, Record<string, string | string[]>>;
 }
 
@@ -43,7 +49,11 @@ export const addCommand = new Command('add')
     for (const file of manifest.files) {
       const dest = join(destDir, file.dest);
       await mkdir(dirname(dest), { recursive: true });
-      await cp(join(pluginDir, file.src), dest);
+      let content = await readFile(join(pluginDir, file.src), 'utf8');
+      for (const { from, to } of manifest.transforms?.[file.src] ?? []) {
+        content = content.replaceAll(from, to);
+      }
+      await writeFile(dest, content, 'utf8');
       console.log(`  created  ${file.dest}`);
     }
 
@@ -76,7 +86,7 @@ export const addCommand = new Command('add')
       const alreadyExists = await access(runbookDest).then(() => true).catch(() => false);
       if (!alreadyExists) {
         await mkdir(dirname(runbookDest), { recursive: true });
-        await cp(join(pluginDir, manifest.example), runbookDest);
+        await writeFile(runbookDest, await readFile(join(pluginDir, manifest.example), 'utf8'), 'utf8');
         console.log(`  created  src/runbooks/${plugin}.ts`);
 
         const pkgPath = join(destDir, 'package.json');

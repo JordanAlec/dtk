@@ -1,5 +1,5 @@
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
-import type { SnsConfig, PublishResult } from "../types/aws-sns.js";
+import type { SnsConfig, PublishResult } from "./types.js";
 
 export function createSnsService(config?: SnsConfig) {
   return {

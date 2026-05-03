@@ -15,6 +15,7 @@ const config: Config = {
   testMatch: [
     '<rootDir>/cli/**/*.test.ts',
     '<rootDir>/templates/init/src/**/*.test.ts',
+    '<rootDir>/templates/plugins/**/*.test.ts',
   ],
 };
 
