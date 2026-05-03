@@ -12,6 +12,7 @@ const PLUGIN_MAP: Record<string, string> = {
   'aws-sqs': 'aws-sqs',
   'aws-sns': 'aws-sns',
   'aws-dynamo': 'aws-dynamo',
+  'aws-s3': 'aws-s3',
   'open-ai': 'open-ai',
 };
 

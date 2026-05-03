@@ -235,6 +235,57 @@ AWS credentials are resolved from the environment via the SDK default provider c
 
 ---
 
+### aws-s3
+
+Uploads files, downloads files, and generates presigned URLs for AWS S3.
+
+```bash
+dtk add aws-s3
+```
+
+Env vars appended to `.env.template`:
+
+```
+AWS_REGION=
+S3_BUCKET_NAME=
+```
+
+Usage:
+
+```ts
+await suite()
+  .s3({ region: process.env.AWS_REGION! })
+  .step("upload", async (ctx) => {
+    return ctx.services.s3.uploadFile(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      "./example.txt",
+      { contentType: "text/plain", metadata: { source: "my-runbook" } }
+    );
+  })
+  .step("presign", async (ctx) => {
+    const result = await ctx.services.s3.getPresignedUrl(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      300
+    );
+    console.log("url:", result.url);
+    return result;
+  })
+  .step("download", async (ctx) => {
+    return ctx.services.s3.downloadFile(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      "./downloaded.txt"
+    );
+  })
+  .run("throwOnError");
+```
+
+AWS credentials are resolved from the environment via the SDK default provider chain (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+
+---
+
 ### open-ai
 
 Lists models and sends responses via the OpenAI API.
@@ -581,6 +632,7 @@ const PLUGIN_MAP: Record<string, string> = {
   'aws-sqs':    'aws-sqs',
   'aws-sns':    'aws-sns',
   'aws-dynamo': 'aws-dynamo',
+  'aws-s3':     'aws-s3',
   'open-ai':    'open-ai',
   'my-plugin':  'my-plugin',  // add this
 };
@@ -673,5 +725,6 @@ templates/
       example.ts          # example runbook (copied to src/runbooks/)
     aws-sns/
     aws-dynamo/
+    aws-s3/
     open-ai/
 ```

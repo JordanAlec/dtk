@@ -331,6 +331,57 @@ AWS credentials are picked up automatically from `AWS_ACCESS_KEY_ID` and `AWS_SE
 
 ---
 
+### aws-s3
+
+Uploads files, downloads files, and generates presigned URLs for AWS S3.
+
+```bash
+dtk add aws-s3
+```
+
+Required env vars:
+
+```
+AWS_REGION=
+S3_BUCKET_NAME=
+```
+
+Usage:
+
+```ts
+await suite()
+  .s3({ region: process.env.AWS_REGION! })
+  .step("upload", async (ctx) => {
+    return ctx.services.s3.uploadFile(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      "./example.txt",
+      { contentType: "text/plain", metadata: { source: "my-runbook" } }
+    );
+  })
+  .step("presign", async (ctx) => {
+    const result = await ctx.services.s3.getPresignedUrl(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      300
+    );
+    console.log("url:", result.url);
+    return result;
+  })
+  .step("download", async (ctx) => {
+    return ctx.services.s3.downloadFile(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      "./downloaded.txt"
+    );
+  })
+  .run("throwOnError");
+```
+
+AWS credentials are picked up automatically from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environment.
+
+---
+
 ### open-ai
 
 Lists models and sends responses via the OpenAI API.
