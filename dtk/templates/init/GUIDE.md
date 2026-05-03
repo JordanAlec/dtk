@@ -47,7 +47,7 @@ await suite()
 | Option | Behaviour |
 |---|---|
 | `"throwOnError"` | Stops on first failure and throws |
-| `"continueOnError"` | Logs the failure and moves to the next step |
+| `"stopOnError"` | Logs the failure and stops without throwing |
 
 ---
 
@@ -512,7 +512,7 @@ All shared type definitions: `StepContext`, `StepFn`, `Step`, the `SuiteRunOptio
 
 ### `src/lib/http.ts`
 
-Axios wrapper. Provides `httpGet`, `httpPost`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages. Use this inside service factories instead of calling axios directly.
+Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages. Use this inside service factories instead of calling axios directly.
 
 ### `src/lib/oauth.ts`
 

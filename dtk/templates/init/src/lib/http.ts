@@ -62,6 +62,17 @@ export async function httpPost<TBody, TResponse>(
   );
 }
 
+export async function httpPut<TBody, TResponse>(
+  url: string,
+  body: TBody,
+  options?: HttpOptions
+): Promise<TResponse> {
+  return executeWithRetry(
+    () => axios.put<TResponse>(url, body, { headers: options?.headers }).then((r) => r.data),
+    options?.retry
+  );
+}
+
 export async function httpDelete(url: string, options?: HttpOptions): Promise<number> {
   return executeWithRetry(
     () => axios.delete(url, { headers: options?.headers }).then((r) => r.status),

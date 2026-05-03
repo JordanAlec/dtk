@@ -4,7 +4,8 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import type { DynamoConfig, PutItemResult, GetItemResult, QueryResult, DeleteItemResult, UpdateItemResult } from "./types.js";
 
 export function createDynamoService(config?: DynamoConfig) {
-  const client = new DynamoDBClient({ region: config!.region });
+  if (!config) throw new Error("dynamo service is not configured -- call .dynamo(config) on the suite");
+  const client = new DynamoDBClient({ region: config.region });
 
   return {
     putItem: async (tableName: string, item: Record<string, any>): Promise<PutItemResult> => {

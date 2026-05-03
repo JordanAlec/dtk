@@ -1,6 +1,6 @@
 import { clientCredentials } from "./lib/oauth.js";
 import { getClaimValues } from "./lib/token.js";
-import { httpGet, httpPost } from "./lib/http.js";
+import { httpGet, httpPost, httpPut, httpDelete } from "./lib/http.js";
 import { basicAuth } from "./lib/basic-auth.js";
 import { bearerToken } from "./lib/bearer-token.js";
 // dtk:imports
@@ -39,6 +39,8 @@ class TestSuite {
       http: {
         get: httpGet,
         post: httpPost,
+        put: httpPut,
+        delete: httpDelete,
       },
       services: {
         // dtk:services

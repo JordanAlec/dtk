@@ -17,7 +17,7 @@ describe('suite runner', () => {
       .step('first',  async () => { order.push(1); })
       .step('second', async () => { order.push(2); })
       .step('third',  async () => { order.push(3); })
-      .run("continueOnError");
+      .run("stopOnError");
     expect(order).toEqual([1, 2, 3]);
   });
 
@@ -61,12 +61,12 @@ describe('suite runner', () => {
     });
   });
 
-  describe('ContinueOnError', () => {
+  describe('StopOnError', () => {
     it('does not throw when a step fails', async () => {
       await expect(
         suite()
           .step('fail', async () => { throw new Error('non-fatal'); })
-          .run("continueOnError")
+          .run("stopOnError")
       ).resolves.toBeUndefined();
     });
 
@@ -76,7 +76,7 @@ describe('suite runner', () => {
         .step('ok',      async () => { ran.push('ok'); })
         .step('fail',    async () => { throw new Error('stop'); })
         .step('skipped', async () => { ran.push('skipped'); })
-        .run("continueOnError");
+        .run("stopOnError");
       expect(ran).toEqual(['ok']);
       expect(ran).not.toContain('skipped');
     });
@@ -84,7 +84,7 @@ describe('suite runner', () => {
     it('logs the failure to console.error', async () => {
       await suite()
         .step('fail', async () => { throw new Error('something broke'); })
-        .run("continueOnError");
+        .run("stopOnError");
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('something broke')
       );

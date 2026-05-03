@@ -19,6 +19,8 @@ export interface StepContext {
   http: {
     get<T>(url: string, options?: HttpOptions): Promise<T>;
     post<TBody, TResponse>(url: string, body: TBody, options?: HttpOptions): Promise<TResponse>;
+    put<TBody, TResponse>(url: string, body: TBody, options?: HttpOptions): Promise<TResponse>;
+    delete(url: string, options?: HttpOptions): Promise<number>;
   };
   services: {
     // dtk:service-types
@@ -32,4 +34,4 @@ export interface Step {
   fn: StepFn;
 }
 
-export type SuiteRunOption = "throwOnError" | "continueOnError";
+export type SuiteRunOption = "throwOnError" | "stopOnError";

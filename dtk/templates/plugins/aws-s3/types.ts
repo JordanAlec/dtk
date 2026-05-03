@@ -10,7 +10,7 @@ export interface UploadOptions {
 export interface UploadFileResult {
   bucket: string;
   key: string;
-  etag: string;
+  etag: string | null;
 }
 
 export interface DownloadFileResult {

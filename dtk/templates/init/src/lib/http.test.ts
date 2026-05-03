@@ -1,4 +1,4 @@
-import { httpGet, httpPost, httpDelete } from './http.js';
+import { httpGet, httpPost, httpPut, httpDelete } from './http.js';
 
 jest.mock('axios');
 import axios from 'axios';
@@ -75,6 +75,31 @@ describe('httpPost', () => {
     mockAxios.post.mockRejectedValue(axiosError);
     mockAxios.isAxiosError.mockReturnValue(true);
     await expect(httpPost('https://api.example.com/items', {})).rejects.toThrow('HTTP 400: Bad request');
+  });
+});
+
+describe('httpPut', () => {
+  it('returns the response data on success', async () => {
+    mockAxios.put.mockResolvedValue({ data: { updated: true } });
+    const result = await httpPut('https://api.example.com/items/1', { name: 'updated' });
+    expect(result).toEqual({ updated: true });
+  });
+
+  it('passes the request body and headers to axios', async () => {
+    mockAxios.put.mockResolvedValue({ data: {} });
+    await httpPut('https://api.example.com/items/1', { key: 'value' }, { headers: { 'Content-Type': 'application/json' } });
+    expect(mockAxios.put).toHaveBeenCalledWith(
+      'https://api.example.com/items/1',
+      { key: 'value' },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  });
+
+  it('normalizes axios errors the same way as httpGet', async () => {
+    const axiosError = { response: { status: 404, data: { Detail: 'Not found' } }, message: 'x' };
+    mockAxios.put.mockRejectedValue(axiosError);
+    mockAxios.isAxiosError.mockReturnValue(true);
+    await expect(httpPut('https://api.example.com/items/1', {})).rejects.toThrow('HTTP 404: Not found');
   });
 });
 

@@ -4,7 +4,8 @@ import { readFile, writeFile } from "fs/promises";
 import type { S3Config, UploadOptions, UploadFileResult, DownloadFileResult, PresignedUrlResult } from "./types.js";
 
 export function createS3Service(config?: S3Config) {
-  const client = new S3Client({ region: config!.region });
+  if (!config) throw new Error("s3 service is not configured -- call .s3(config) on the suite");
+  const client = new S3Client({ region: config.region });
 
   return {
     uploadFile: async (bucket: string, key: string, filePath: string, options: UploadOptions = {}): Promise<UploadFileResult> => {
@@ -18,7 +19,7 @@ export function createS3Service(config?: S3Config) {
           ...(options.metadata && { Metadata: options.metadata }),
         })
       );
-      return { bucket, key, etag: response.ETag! };
+      return { bucket, key, etag: response.ETag ?? null };
     },
 
     downloadFile: async (bucket: string, key: string, localPath: string): Promise<DownloadFileResult> => {

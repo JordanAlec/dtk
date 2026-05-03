@@ -74,6 +74,14 @@ describe('createS3Service', () => {
       const result = await s3.uploadFile('my-bucket', 'uploads/file.txt', './file.txt');
       expect(result).toEqual({ bucket: 'my-bucket', key: 'uploads/file.txt', etag: '"abc123"' });
     });
+
+    it('returns null etag when not present in the response', async () => {
+      (readFile as jest.Mock).mockResolvedValue(Buffer.from(''));
+      mockSend.mockResolvedValue({});
+      const s3 = createS3Service(config);
+      const result = await s3.uploadFile('my-bucket', 'key', './file.txt');
+      expect(result.etag).toBeNull();
+    });
   });
 
   describe('downloadFile', () => {

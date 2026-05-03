@@ -354,7 +354,7 @@ npm run runbook:my-runbook
 | Option | Behaviour |
 |---|---|
 | `"throwOnError"` | Stops on first failure and throws |
-| `"continueOnError"` | Logs the failure and moves to the next step |
+| `"stopOnError"` | Logs the failure and stops without throwing |
 
 ### Step context
 
@@ -673,7 +673,7 @@ my-project/
     suite.ts              # TestSuite builder and runner -- do not delete sentinel comments
     load-env.ts           # dotenv bootstrap -- import this first in every runbook
     lib/
-      http.ts             # httpGet / httpPost / httpDelete (axios wrapper)
+      http.ts             # httpGet / httpPost / httpPut / httpDelete (axios wrapper)
       oauth.ts            # client credentials OAuth flow
       basic-auth.ts       # base64 Basic auth header builder
       bearer-token.ts     # Bearer token header builder
