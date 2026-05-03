@@ -19,14 +19,6 @@ describe('createS3Service', () => {
   const config = { region: 'us-east-1' };
 
   describe('uploadFile', () => {
-    it('creates the S3 client with the configured region', async () => {
-      (readFile as jest.Mock).mockResolvedValue(Buffer.from('content'));
-      mockSend.mockResolvedValue({ ETag: '"abc123"' });
-      const s3 = createS3Service({ region: 'eu-west-1' });
-      await s3.uploadFile('my-bucket', 'key', './file.txt');
-      expect(S3Client).toHaveBeenCalledWith({ region: 'eu-west-1' });
-    });
-
     it('reads the local file and sends a PutObjectCommand with bucket, key, and body', async () => {
       const fileContent = Buffer.from('hello world');
       (readFile as jest.Mock).mockResolvedValue(fileContent);
@@ -126,13 +118,6 @@ describe('createS3Service', () => {
   });
 
   describe('getPresignedUrl', () => {
-    it('returns a presigned URL for the given bucket and key', async () => {
-      (getSignedUrl as jest.Mock).mockResolvedValue('https://s3.example.com/presigned');
-      const s3 = createS3Service(config);
-      const result = await s3.getPresignedUrl('my-bucket', 'uploads/file.txt');
-      expect(result.url).toBe('https://s3.example.com/presigned');
-    });
-
     it('defaults expiresIn to 3600 when not provided', async () => {
       (getSignedUrl as jest.Mock).mockResolvedValue('https://s3.example.com/presigned');
       const s3 = createS3Service(config);

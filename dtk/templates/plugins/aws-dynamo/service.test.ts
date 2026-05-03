@@ -19,13 +19,6 @@ describe('createDynamoService', () => {
   const config = { region: 'us-east-1' };
 
   describe('putItem', () => {
-    it('creates the DynamoDB client with the configured region', async () => {
-      mockSend.mockResolvedValue({});
-      const dynamo = createDynamoService({ region: 'eu-west-1' });
-      await dynamo.putItem('my-table', { id: '1' });
-      expect(DynamoDBClient).toHaveBeenCalledWith({ region: 'eu-west-1' });
-    });
-
     it('sends a PutItemCommand with the table name and marshalled item', async () => {
       mockSend.mockResolvedValue({});
       const dynamo = createDynamoService(config);

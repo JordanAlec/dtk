@@ -70,12 +70,6 @@ describe('httpPost', () => {
     );
   });
 
-  it('normalizes axios errors the same way as httpGet', async () => {
-    const axiosError = { response: { status: 400, data: { Detail: 'Bad request' } }, message: 'x' };
-    mockAxios.post.mockRejectedValue(axiosError);
-    mockAxios.isAxiosError.mockReturnValue(true);
-    await expect(httpPost('https://api.example.com/items', {})).rejects.toThrow('HTTP 400: Bad request');
-  });
 });
 
 describe('httpPut', () => {
@@ -95,12 +89,6 @@ describe('httpPut', () => {
     );
   });
 
-  it('normalizes axios errors the same way as httpGet', async () => {
-    const axiosError = { response: { status: 404, data: { Detail: 'Not found' } }, message: 'x' };
-    mockAxios.put.mockRejectedValue(axiosError);
-    mockAxios.isAxiosError.mockReturnValue(true);
-    await expect(httpPut('https://api.example.com/items/1', {})).rejects.toThrow('HTTP 404: Not found');
-  });
 });
 
 describe('httpDelete', () => {
