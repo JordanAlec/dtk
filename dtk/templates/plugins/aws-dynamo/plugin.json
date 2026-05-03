@@ -1,0 +1,38 @@
+{
+  "name": "aws-dynamo",
+  "description": "AWS DynamoDB -- create and query items in DynamoDB tables",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/util-dynamodb": "^3.0.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/dynamo.ts" },
+    { "src": "types.ts", "dest": "src/types/aws-dynamo.ts" },
+    { "src": "service.test.ts", "dest": "src/services/dynamo.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/aws-dynamo.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./dynamo.js" }
+    ]
+  },
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createDynamoService } from \"./services/dynamo.js\";",
+        "import type { DynamoConfig } from \"./types/aws-dynamo.js\";"
+      ],
+      "configs": "  private dynamoConfig?: DynamoConfig;",
+      "methods": "  dynamo(config: DynamoConfig): this { this.dynamoConfig = config; return this; }",
+      "services": "        dynamo: createDynamoService(this.dynamoConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { DynamoConfig, PutItemResult, GetItemResult, QueryResult, DeleteItemResult, UpdateItemResult } from \"./aws-dynamo.js\";",
+      "service-types": "    dynamo: { putItem(tableName: string, item: Record<string, any>): Promise<PutItemResult>; getItem(tableName: string, key: Record<string, any>): Promise<GetItemResult>; queryItems(tableName: string, params: Record<string, any>): Promise<QueryResult>; updateItem(tableName: string, key: Record<string, any>, params: Record<string, any>): Promise<UpdateItemResult>; deleteItem(tableName: string, key: Record<string, any>): Promise<DeleteItemResult>; scanItems(tableName: string, params?: Record<string, any>): Promise<QueryResult>; };"
+    }
+  }
+}

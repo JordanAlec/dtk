@@ -11,6 +11,7 @@ const TEMPLATES_DIR = join(__dirname, '../templates');
 const PLUGIN_MAP: Record<string, string> = {
   'aws-sqs': 'aws-sqs',
   'aws-sns': 'aws-sns',
+  'aws-dynamo': 'aws-dynamo',
   'open-ai': 'open-ai',
 };
 
