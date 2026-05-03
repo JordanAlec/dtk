@@ -129,7 +129,7 @@ await suite()
     console.log("messageId:", result.messageId);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 AWS credentials are resolved from the environment via the SDK default provider chain (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
@@ -168,8 +168,70 @@ await suite()
     console.log("messageId:", result.messageId);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
+
+---
+
+### aws-dynamo
+
+Reads and writes items in AWS DynamoDB tables.
+
+```bash
+dtk add aws-dynamo
+```
+
+Env vars appended to `.env.template`:
+
+```
+AWS_REGION=
+DYNAMO_TABLE_NAME=
+```
+
+Usage:
+
+```ts
+await suite()
+  .dynamo({
+    region: process.env.AWS_REGION!,
+  })
+  .step("put", async (ctx) => {
+    return ctx.services.dynamo.putItem(process.env.DYNAMO_TABLE_NAME!, {
+      id: "user-123",
+      name: "John Doe",
+    });
+  })
+  .step("get", async (ctx) => {
+    return ctx.services.dynamo.getItem(process.env.DYNAMO_TABLE_NAME!, { id: "user-123" });
+  })
+  .step("update", async (ctx) => {
+    return ctx.services.dynamo.updateItem(
+      process.env.DYNAMO_TABLE_NAME!,
+      { id: "user-123" },
+      {
+        UpdateExpression: "SET #n = :n",
+        ExpressionAttributeNames: { "#n": "name" },
+        ExpressionAttributeValues: { ":n": { S: "Jane Doe" } },
+      }
+    );
+  })
+  .step("query", async (ctx) => {
+    return ctx.services.dynamo.queryItems(process.env.DYNAMO_TABLE_NAME!, {
+      KeyConditionExpression: "#pk = :pk",
+      ExpressionAttributeNames: { "#pk": "id" },
+      ExpressionAttributeValues: { ":pk": { S: "user-123" } },
+    });
+  })
+  .step("scan", async (ctx) => {
+    return ctx.services.dynamo.scanItems(process.env.DYNAMO_TABLE_NAME!, { Limit: 10 });
+  })
+  .step("delete", async (ctx) => {
+    return ctx.services.dynamo.deleteItem(process.env.DYNAMO_TABLE_NAME!, { id: "user-123" });
+  })
+  .run("throwOnError");
+```
+
+AWS credentials are resolved from the environment via the SDK default provider chain (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
 
 ---
 
@@ -200,7 +262,7 @@ await suite()
     const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
     return ctx.services.openAi.response(token, "gpt-4o-mini", "text", "Say hello.");
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ---
@@ -211,7 +273,7 @@ A runbook is a TypeScript file that uses the `suite()` builder to chain steps an
 
 ```ts
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../suite.js";
+import { suite } from "../suite.js";
 
 await suite()
   .step("step-one", async (ctx) => {
@@ -223,7 +285,7 @@ await suite()
     const prev = ctx.outputs["step-one"] as { id: number };
     console.log("previous id:", prev.id);
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 Add a script to `package.json` to run it:
@@ -240,8 +302,8 @@ npm run runbook:my-runbook
 
 | Option | Behaviour |
 |---|---|
-| `SuiteRunOption.ThrowOnError` | Stops on first failure and throws |
-| `SuiteRunOption.ContinueOnError` | Logs the failure and moves to the next step |
+| `"throwOnError"` | Stops on first failure and throws |
+| `"continueOnError"` | Logs the failure and moves to the next step |
 
 ### Step context
 
@@ -396,7 +458,7 @@ await suite()
   .step("get-item", async (ctx) => {
     return ctx.services.myService.getItem(1);
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ---
@@ -461,7 +523,7 @@ The example is copied to `src/runbooks/<plugin>.ts` in the user's project. Impor
 
 ```ts
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../suite.js";
+import { suite } from "../suite.js";
 
 await suite()
   .myPlugin({
@@ -472,7 +534,7 @@ await suite()
     console.log("result:", result.status);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ### 6. Write `plugin.json`
@@ -516,10 +578,11 @@ Add your plugin key to `PLUGIN_MAP`:
 
 ```ts
 const PLUGIN_MAP: Record<string, string> = {
-  'aws-sqs':   'aws-sqs',
-  'aws-sns':   'aws-sns',
-  'open-ai':   'open-ai',
-  'my-plugin': 'my-plugin',  // add this
+  'aws-sqs':    'aws-sqs',
+  'aws-sns':    'aws-sns',
+  'aws-dynamo': 'aws-dynamo',
+  'open-ai':    'open-ai',
+  'my-plugin':  'my-plugin',  // add this
 };
 ```
 
@@ -564,7 +627,7 @@ my-project/
       bearer-token.ts     # Bearer token header builder
       token.ts            # JWT claim decoder
     types/
-      suite.ts            # StepContext, SuiteRunOption, auth types -- do not delete sentinel comments
+      suite.ts            # StepContext, SuiteRunOption string union, auth types -- do not delete sentinel comments
       oauth.ts            # OAuthConfig, TokenResponse
       aws-sqs.ts          # SqsConfig, SendMessageResult (added by plugin)
     services/
@@ -609,5 +672,6 @@ templates/
       env.txt             # env var fragment (appended to .env.template)
       example.ts          # example runbook (copied to src/runbooks/)
     aws-sns/
+    aws-dynamo/
     open-ai/
 ```
