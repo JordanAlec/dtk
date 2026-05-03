@@ -11,10 +11,9 @@ import { createOpenAIService } from "./services/open-ai.js";
 import type { OpenAiConfig } from "./types/open-ai.js";
 // dtk:imports
 
-import { SuiteRunOption } from "./types/suite.js";
-import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step } from "./types/suite.js";
+import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step, SuiteRunOption } from "./types/suite.js";
 
-export { SuiteRunOption };
+export type { SuiteRunOption };
 
 class TestSuite {
   private steps: Step[] = [];
@@ -72,7 +71,7 @@ class TestSuite {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[FAIL] ${step.name}: ${message}`);
-        if (option === SuiteRunOption.ThrowOnError) throw err;
+        if (option === "throwOnError") throw err;
         else break;
       }
     }

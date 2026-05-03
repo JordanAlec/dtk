@@ -1,5 +1,4 @@
 import { suite } from './suite.js';
-import { SuiteRunOption } from './suite.js';
 
 // suppress the [OK] / [FAIL] console output during tests
 beforeEach(() => {
@@ -18,7 +17,7 @@ describe('suite runner', () => {
       .step('first',  async () => { order.push(1); })
       .step('second', async () => { order.push(2); })
       .step('third',  async () => { order.push(3); })
-      .run(SuiteRunOption.ContinueOnError);
+      .run("continueOnError");
     expect(order).toEqual([1, 2, 3]);
   });
 
@@ -27,7 +26,7 @@ describe('suite runner', () => {
     await suite()
       .step('produce', async () => ({ value: 42 }))
       .step('consume', async (ctx) => { captured = ctx.outputs['produce']; })
-      .run(SuiteRunOption.ThrowOnError);
+      .run("throwOnError");
     expect(captured).toEqual({ value: 42 });
   });
 
@@ -37,7 +36,7 @@ describe('suite runner', () => {
       .step('a', async () => 'alpha')
       .step('b', async () => 'beta')
       .step('c', async (ctx) => { seen.push(ctx.outputs['a'], ctx.outputs['b']); })
-      .run(SuiteRunOption.ThrowOnError);
+      .run("throwOnError");
     expect(seen).toEqual(['alpha', 'beta']);
   });
 
@@ -46,7 +45,7 @@ describe('suite runner', () => {
       await expect(
         suite()
           .step('fail', async () => { throw new Error('boom'); })
-          .run(SuiteRunOption.ThrowOnError)
+          .run("throwOnError")
       ).rejects.toThrow('boom');
     });
 
@@ -56,7 +55,7 @@ describe('suite runner', () => {
         .step('ok',      async () => { ran.push('ok'); })
         .step('fail',    async () => { throw new Error('boom'); })
         .step('skipped', async () => { ran.push('skipped'); })
-        .run(SuiteRunOption.ThrowOnError)
+        .run("throwOnError")
         .catch(() => {});
       expect(ran).toEqual(['ok']);
     });
@@ -67,7 +66,7 @@ describe('suite runner', () => {
       await expect(
         suite()
           .step('fail', async () => { throw new Error('non-fatal'); })
-          .run(SuiteRunOption.ContinueOnError)
+          .run("continueOnError")
       ).resolves.toBeUndefined();
     });
 
@@ -77,7 +76,7 @@ describe('suite runner', () => {
         .step('ok',      async () => { ran.push('ok'); })
         .step('fail',    async () => { throw new Error('stop'); })
         .step('skipped', async () => { ran.push('skipped'); })
-        .run(SuiteRunOption.ContinueOnError);
+        .run("continueOnError");
       expect(ran).toEqual(['ok']);
       expect(ran).not.toContain('skipped');
     });
@@ -85,7 +84,7 @@ describe('suite runner', () => {
     it('logs the failure to console.error', async () => {
       await suite()
         .step('fail', async () => { throw new Error('something broke'); })
-        .run(SuiteRunOption.ContinueOnError);
+        .run("continueOnError");
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('something broke')
       );

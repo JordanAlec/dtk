@@ -5,10 +5,9 @@ import { basicAuth } from "./lib/basic-auth.js";
 import { bearerToken } from "./lib/bearer-token.js";
 // dtk:imports
 
-import { SuiteRunOption } from "./types/suite.js";
-import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step } from "./types/suite.js";
+import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step, SuiteRunOption } from "./types/suite.js";
 
-export { SuiteRunOption };
+export type { SuiteRunOption };
 
 class TestSuite {
   private steps: Step[] = [];
@@ -57,7 +56,7 @@ class TestSuite {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[FAIL] ${step.name}: ${message}`);
-        if (option === SuiteRunOption.ThrowOnError) throw err;
+        if (option === "throwOnError") throw err;
         else break;
       }
     }

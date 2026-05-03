@@ -38,7 +38,4 @@ export interface Step {
   fn: StepFn;
 }
 
-export enum SuiteRunOption {
-  ThrowOnError = "throwOnError",
-  ContinueOnError = "continueOnError",
-}
+export type SuiteRunOption = "throwOnError" | "continueOnError";
