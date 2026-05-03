@@ -1,0 +1,42 @@
+{
+  "name": "@jordanalec/dtk",
+  "version": "1.0.0",
+  "description": "CLI scaffolding tool for generating self-contained TypeScript runbook projects",
+  "keywords": ["cli", "runbook", "typescript", "scaffolding", "devtools"],
+  "author": "JordanAlec",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JordanAlec/dtk.git"
+  },
+  "homepage": "https://github.com/JordanAlec/dtk#readme",
+  "type": "module",
+  "bin": {
+    "dtk": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node node_modules/jest/bin/jest.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.1040.0",
+    "@aws-sdk/client-sqs": "^3.1040.0",
+    "axios": "^1.6.0",
+    "commander": "^14.0.3",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
