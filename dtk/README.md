@@ -21,7 +21,7 @@ A CLI scaffolding tool for generating self-contained TypeScript runbook projects
 ## Installation
 
 ```bash
-npm install -g dtk
+npm install -g @jordanalec/dtk
 ```
 
 **For contributors** — clone and link locally:

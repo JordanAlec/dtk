@@ -1,13 +1,24 @@
 {
-  "name": "dtk",
-  "version": "0.0.1",
+  "name": "@jordanalec/dtk",
+  "version": "1.0.0",
+  "description": "CLI scaffolding tool for generating self-contained TypeScript runbook projects",
+  "keywords": ["cli", "runbook", "typescript", "scaffolding", "devtools"],
+  "author": "JordanAlec",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JordanAlec/dtk.git"
+  },
+  "homepage": "https://github.com/JordanAlec/dtk#readme",
   "type": "module",
   "bin": {
     "dtk": "./dist/cli.js"
   },
   "files": [
     "dist",
-    "templates"
+    "templates",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
