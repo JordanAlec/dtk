@@ -419,7 +419,7 @@ If there is no plugin for the service you need, wire one in manually. Four files
 `src/services/my-service.ts`:
 
 ```ts
-import { httpGet, httpPost } from "../lib/http.js";
+import { httpGet, httpPost, httpPut, httpDelete } from "../lib/http.js";
 
 export interface MyServiceConfig {
   baseUrl: string;

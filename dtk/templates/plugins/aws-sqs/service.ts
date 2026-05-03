@@ -2,12 +2,14 @@ import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import type { SqsConfig, SendMessageResult } from "./types.js";
 
 export function createSqsService(config?: SqsConfig) {
+  if (!config) throw new Error("sqs service is not configured -- call .sqs(config) on the suite");
+  const client = new SQSClient({ region: config.region });
+
   return {
     sendMessage: async (body: string, attributes?: Record<string, string>): Promise<SendMessageResult> => {
-      const client = new SQSClient({ region: config!.region });
       const response = await client.send(
         new SendMessageCommand({
-          QueueUrl: config!.queueUrl,
+          QueueUrl: config.queueUrl,
           MessageBody: body,
           ...(attributes && {
             MessageAttributes: Object.fromEntries(
@@ -16,7 +18,7 @@ export function createSqsService(config?: SqsConfig) {
           }),
         })
       );
-      return { messageId: response.MessageId! };
+      return { messageId: response.MessageId ?? null };
     },
   };
 }

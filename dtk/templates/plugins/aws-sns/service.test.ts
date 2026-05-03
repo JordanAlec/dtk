@@ -20,6 +20,13 @@ describe('createSnsService', () => {
     expect(result).toEqual({ messageId: 'pub-abc-123' });
   });
 
+  it('returns null messageId when not present in the response', async () => {
+    mockSend.mockResolvedValue({});
+    const sns = createSnsService(config);
+    const result = await sns.publish('hello');
+    expect(result.messageId).toBeNull();
+  });
+
   it('sends the message and topic ARN in the command', async () => {
     mockSend.mockResolvedValue({ MessageId: 'id' });
     const sns = createSnsService(config);

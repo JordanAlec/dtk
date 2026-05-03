@@ -20,6 +20,13 @@ describe('createSqsService', () => {
     expect(result).toEqual({ messageId: 'msg-abc-123' });
   });
 
+  it('returns null messageId when not present in the response', async () => {
+    mockSend.mockResolvedValue({});
+    const sqs = createSqsService(config);
+    const result = await sqs.sendMessage('hello');
+    expect(result.messageId).toBeNull();
+  });
+
   it('sends the message body and queue URL in the command', async () => {
     mockSend.mockResolvedValue({ MessageId: 'id' });
     const sqs = createSqsService(config);

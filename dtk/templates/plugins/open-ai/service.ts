@@ -1,26 +1,22 @@
-import type { OpenAiConfig, OpenAiListModels, OpenAiResponse, OpenAiResponseBody } from "./types.js";
+import type { OpenAiConfig, OpenAiListModels, OpenAiResponse, OpenAiResponseBody, OpenAiResponseFormat } from "./types.js";
 import { httpGet, httpPost } from "../../init/src/lib/http.js";
 
 export function createOpenAIService(config?: OpenAiConfig) {
+  if (!config) throw new Error("openAi service is not configured -- call .openAi(config) on the suite");
+
   return {
     listModels: async (bearerToken: string): Promise<OpenAiListModels> => {
       const headers: Record<string, string> = { Authorization: bearerToken };
-      const models = await httpGet<OpenAiListModels>(`${config!.baseUrl}/v1/models`, { headers });
-      return models;
+      return httpGet<OpenAiListModels>(`${config.baseUrl}/v1/models`, { headers });
     },
-    response: async (bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse> => {
+    response: async (bearerToken: string, model: string, format: OpenAiResponseFormat, message: string): Promise<OpenAiResponse> => {
       const headers: Record<string, string> = { Authorization: bearerToken };
-      const body = {
-        model: model,
+      const body: OpenAiResponseBody = {
+        model,
         input: message,
-        text: {
-          format: {
-            type: format
-          }
-        }
+        text: { format: { type: format } },
       };
-      const response = await httpPost<OpenAiResponseBody, OpenAiResponse>(`${config!.baseUrl}/v1/responses`, body, { headers });
-      return response;
-    }
+      return httpPost<OpenAiResponseBody, OpenAiResponse>(`${config.baseUrl}/v1/responses`, body, { headers });
+    },
   };
 }

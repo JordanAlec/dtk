@@ -9,7 +9,7 @@ import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, Step
 
 export type { SuiteRunOption };
 
-class TestSuite {
+class Suite {
   private steps: Step[] = [];
   private oauthConfig?: OAuthConfig;
   private basicAuthConfig?: BasicAuthConfig;
@@ -65,6 +65,6 @@ class TestSuite {
   }
 }
 
-export function suite(): TestSuite {
-  return new TestSuite();
+export function suite(): Suite {
+  return new Suite();
 }
