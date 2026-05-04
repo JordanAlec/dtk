@@ -4,5 +4,5 @@ export interface SqsConfig {
 }
 
 export interface SendMessageResult {
-  messageId: string;
+  messageId: string | null;
 }

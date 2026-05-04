@@ -5,13 +5,19 @@
   "scripts": {
     "runbook:example": "tsx src/runbooks/example.ts",
     "test": "node node_modules/jest/bin/jest.js",
+    "runbook:aws-dynamo": "tsx src/runbooks/aws-dynamo.ts",
+    "runbook:aws-s3": "tsx src/runbooks/aws-s3.ts",
     "runbook:aws-sqs": "tsx src/runbooks/aws-sqs.ts",
     "runbook:aws-sns": "tsx src/runbooks/aws-sns.ts",
     "runbook:open-ai": "tsx src/runbooks/open-ai.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "^3.0.0",
-    "@aws-sdk/client-sqs": "^3.0.0",
+    "@aws-sdk/client-dynamodb": "^3.300.0",
+    "@aws-sdk/client-s3": "^3.300.0",
+    "@aws-sdk/client-sns": "^3.300.0",
+    "@aws-sdk/client-sqs": "^3.300.0",
+    "@aws-sdk/s3-request-presigner": "^3.300.0",
+    "@aws-sdk/util-dynamodb": "^3.300.0",
     "axios": "^1.6.0",
     "dotenv": "^16.4.0"
   },

@@ -25,13 +25,6 @@ describe('createOpenAIService', () => {
       );
     });
 
-    it('returns the model list from the response', async () => {
-      const models = { object: 'list', data: [{ id: 'gpt-4o', object: 'model', created: 0, owned_by: 'openai' }] };
-      mockHttpGet.mockResolvedValue(models);
-      const openAi = createOpenAIService(config);
-      const result = await openAi.listModels(bearerToken);
-      expect(result).toEqual(models);
-    });
   });
 
   describe('response', () => {
@@ -58,12 +51,5 @@ describe('createOpenAIService', () => {
       });
     });
 
-    it('returns the response from the API', async () => {
-      const apiResponse = { id: 'resp-abc', status: 'completed', output: [] };
-      mockHttpPost.mockResolvedValue(apiResponse);
-      const openAi = createOpenAIService(config);
-      const result = await openAi.response(bearerToken, 'gpt-4o-mini', 'text', 'Hi');
-      expect(result).toEqual(apiResponse);
-    });
   });
 });

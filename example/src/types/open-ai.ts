@@ -14,14 +14,16 @@ export interface OpenAiModel {
   owned_by: string;
 }
 
+export type OpenAiResponseFormat = "text" | "json_object";
+
 export interface OpenAiResponseBody {
   model: string;
   input: string;
   text?: {
     format: {
-      type: string;
-    }
-  }
+      type: OpenAiResponseFormat;
+    };
+  };
 }
 
 export interface OpenAiResponse {
