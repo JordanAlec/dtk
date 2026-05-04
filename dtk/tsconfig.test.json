@@ -3,7 +3,8 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "node",
-    "rootDir": "."
+    "rootDir": ".",
+    "types": ["jest", "node"]
   },
   "include": ["cli", "templates/init/src", "templates/plugins"],
   "exclude": ["templates/plugins/**/example.ts"]

@@ -4,12 +4,8 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
-    "outDir": "./dist",
-    "rootDir": "./cli",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node", "jest"]
-  },
-  "include": ["cli"],
-  "exclude": ["cli/**/*.test.ts"]
+    "types": ["jest", "node"]
+  }
 }

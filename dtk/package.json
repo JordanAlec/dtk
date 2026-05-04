@@ -31,19 +31,19 @@
     "test": "node node_modules/jest/bin/jest.js"
   },
   "dependencies": {
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
     "@aws-sdk/client-dynamodb": "^3.1041.0",
     "@aws-sdk/client-s3": "^3.1041.0",
     "@aws-sdk/client-sns": "^3.1040.0",
     "@aws-sdk/client-sqs": "^3.1040.0",
     "@aws-sdk/s3-request-presigner": "^3.1041.0",
     "@aws-sdk/util-dynamodb": "^3.996.2",
-    "axios": "^1.6.0",
-    "commander": "^14.0.3",
-    "dotenv": "^16.4.0"
-  },
-  "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0",
     "jest": "^30.3.0",
     "ts-jest": "^29.4.9",
     "tsx": "^4.0.0",
