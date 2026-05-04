@@ -1,6 +1,6 @@
 {
   "name": "@jordanalec/dtk",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "CLI scaffolding tool for generating self-contained TypeScript runbook projects",
   "keywords": [
     "cli",
