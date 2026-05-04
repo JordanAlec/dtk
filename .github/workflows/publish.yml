@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'dtk/package.json'
-  workflow_dispatch:
 
 permissions:
   id-token: write
