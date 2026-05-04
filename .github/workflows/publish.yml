@@ -22,14 +22,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Update npm
+        run: npm install -g npm@latest
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
           scope: '@jordanalec'
-
-      - name: Update npm
-        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
