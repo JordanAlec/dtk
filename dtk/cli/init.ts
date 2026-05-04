@@ -7,7 +7,7 @@ import { execSync } from 'child_process';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = join(__dirname, '../templates');
 
-const ROOT_FILES = ['.env.template', '.gitignore', 'tsconfig.json', 'tsconfig.test.json', 'jest.config.ts', 'package.json', 'README.md', 'GUIDE.md'];
+const ROOT_FILES = ['.env.template', 'tsconfig.json', 'tsconfig.test.json', 'jest.config.ts', 'package.json', 'README.md', 'GUIDE.md'];
 
 export const initCommand = new Command('init')
   .description('Scaffold a new dtk project in the current directory')
@@ -16,6 +16,7 @@ export const initCommand = new Command('init')
     const dest = process.cwd();
 
     await cp(join(initDir, 'src'), join(dest, 'src'), { recursive: true });
+    await cp(join(initDir, 'gitignore'), join(dest, '.gitignore'));
     for (const file of ROOT_FILES) {
       await cp(join(initDir, file), join(dest, file));
     }
