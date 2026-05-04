@@ -171,4 +171,10 @@ describe('createDynamoService', () => {
     });
 
   });
+
+  it('throws error when a method is called without config', async () => {
+    const dynamo = createDynamoService();
+    await expect(dynamo.putItem('my-table', { id: '1' })).rejects.toThrow('dynamo service is not configured');
+  });
+
 });

@@ -141,4 +141,10 @@ describe('createS3Service', () => {
       expect(result).toEqual({ url: 'https://s3.example.com/presigned', expiresIn: 300, bucket: 'my-bucket', key: 'uploads/file.txt' });
     });
   });
+
+  it('throws error when a method is called without config', async () => {
+    const s3 = createS3Service();
+    await expect(s3.uploadFile('bucket', 'key', './file.txt')).rejects.toThrow('s3 service is not configured');
+  });
+
 });
