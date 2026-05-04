@@ -1,5 +1,5 @@
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../suite.js";
+import { suite } from "../suite.js";
 
 await suite()
   .sns({
@@ -15,4 +15,4 @@ await suite()
     console.log("messageId:", result.messageId);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");

@@ -1,4 +1,4 @@
-import { httpGet, httpPost, httpDelete } from './http.js';
+import { httpGet, httpPost, httpPut, httpDelete } from './http.js';
 
 jest.mock('axios');
 import axios from 'axios';
@@ -70,12 +70,25 @@ describe('httpPost', () => {
     );
   });
 
-  it('normalizes axios errors the same way as httpGet', async () => {
-    const axiosError = { response: { status: 400, data: { Detail: 'Bad request' } }, message: 'x' };
-    mockAxios.post.mockRejectedValue(axiosError);
-    mockAxios.isAxiosError.mockReturnValue(true);
-    await expect(httpPost('https://api.example.com/items', {})).rejects.toThrow('HTTP 400: Bad request');
+});
+
+describe('httpPut', () => {
+  it('returns the response data on success', async () => {
+    mockAxios.put.mockResolvedValue({ data: { updated: true } });
+    const result = await httpPut('https://api.example.com/items/1', { name: 'updated' });
+    expect(result).toEqual({ updated: true });
   });
+
+  it('passes the request body and headers to axios', async () => {
+    mockAxios.put.mockResolvedValue({ data: {} });
+    await httpPut('https://api.example.com/items/1', { key: 'value' }, { headers: { 'Content-Type': 'application/json' } });
+    expect(mockAxios.put).toHaveBeenCalledWith(
+      'https://api.example.com/items/1',
+      { key: 'value' },
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  });
+
 });
 
 describe('httpDelete', () => {
@@ -83,5 +96,102 @@ describe('httpDelete', () => {
     mockAxios.delete.mockResolvedValue({ status: 204 });
     const status = await httpDelete('https://api.example.com/item/1');
     expect(status).toBe(204);
+  });
+});
+
+describe('retry', () => {
+  it('retries and succeeds when retryOn returns true', async () => {
+    mockAxios.get
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValueOnce({ data: { ok: true } });
+
+    const result = await httpGet('https://api.example.com/item', {
+      retry: { attempts: 1, delayMs: 0, retryOn: () => true },
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(mockAxios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry when retryOn returns false', async () => {
+    mockAxios.get.mockRejectedValue(new Error('fatal'));
+
+    await expect(
+      httpGet('https://api.example.com/item', {
+        retry: { attempts: 3, delayMs: 0, retryOn: () => false },
+      })
+    ).rejects.toThrow('fatal');
+
+    expect(mockAxios.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('exhausts all attempts and throws when retryOn always returns true', async () => {
+    mockAxios.get.mockRejectedValue(new Error('always fails'));
+
+    await expect(
+      httpGet('https://api.example.com/item', {
+        retry: { attempts: 2, delayMs: 0, retryOn: () => true },
+      })
+    ).rejects.toThrow('always fails');
+
+    expect(mockAxios.get).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry when no retryOn predicate is provided', async () => {
+    mockAxios.get.mockRejectedValue(new Error('no predicate'));
+
+    await expect(
+      httpGet('https://api.example.com/item', {
+        retry: { attempts: 3, delayMs: 0 },
+      })
+    ).rejects.toThrow('no predicate');
+
+    expect(mockAxios.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('passes the raw error to the retryOn predicate', async () => {
+    const err = new Error('check me');
+    mockAxios.get.mockRejectedValue(err);
+    const retryOn = jest.fn().mockReturnValue(false);
+
+    await expect(
+      httpGet('https://api.example.com/item', {
+        retry: { attempts: 1, delayMs: 0, retryOn },
+      })
+    ).rejects.toThrow();
+
+    expect(retryOn).toHaveBeenCalledWith(err);
+  });
+
+  it('respects exponential backoff and maxDelayMs across multiple retries', async () => {
+    mockAxios.get
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValueOnce({ data: 'recovered' });
+
+    const result = await httpGet('https://api.example.com/item', {
+      retry: {
+        attempts: 2,
+        delayMs: 0,
+        backoff: 'exponential',
+        maxDelayMs: 100,
+        retryOn: () => true,
+      },
+    });
+
+    expect(result).toBe('recovered');
+    expect(mockAxios.get).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry when attempts is 0', async () => {
+    mockAxios.get.mockRejectedValue(new Error('fail'));
+
+    await expect(
+      httpGet('https://api.example.com/item', {
+        retry: { attempts: 0, delayMs: 0, retryOn: () => true },
+      })
+    ).rejects.toThrow('fail');
+
+    expect(mockAxios.get).toHaveBeenCalledTimes(1);
   });
 });

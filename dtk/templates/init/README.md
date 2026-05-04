@@ -37,7 +37,7 @@ Install the dtk CLI if you haven't already, then run from this directory:
 dtk add <plugin>
 ```
 
-Available plugins: `aws-sqs`, `aws-sns`, `open-ai`
+Available plugins: `aws-sqs`, `aws-sns`, `aws-dynamo`, `aws-s3`, `open-ai`
 
 Each plugin adds a service, wires it into the suite, appends env vars to `.env.template`, creates an example runbook, and installs dependencies automatically.
 

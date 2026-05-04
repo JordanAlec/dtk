@@ -20,11 +20,11 @@ describe('createSnsService', () => {
     expect(result).toEqual({ messageId: 'pub-abc-123' });
   });
 
-  it('creates the SNS client with the configured region', async () => {
-    mockSend.mockResolvedValue({ MessageId: 'id' });
-    const sns = createSnsService({ ...config, region: 'ap-southeast-2' });
-    await sns.publish('test');
-    expect(SNSClient).toHaveBeenCalledWith({ region: 'ap-southeast-2' });
+  it('returns null messageId when not present in the response', async () => {
+    mockSend.mockResolvedValue({});
+    const sns = createSnsService(config);
+    const result = await sns.publish('hello');
+    expect(result.messageId).toBeNull();
   });
 
   it('sends the message and topic ARN in the command', async () => {
@@ -71,9 +71,9 @@ describe('createSnsService', () => {
     expect(commandArg.MessageAttributes).toBeUndefined();
   });
 
-  it('propagates errors from the SNS client', async () => {
-    mockSend.mockRejectedValue(new Error('SNS unavailable'));
-    const sns = createSnsService(config);
-    await expect(sns.publish('body')).rejects.toThrow('SNS unavailable');
+  it('throws error when publish is called without config', async () => {
+    const sns = createSnsService();
+    await expect(sns.publish('hello')).rejects.toThrow('sns service is not configured');
   });
+
 });

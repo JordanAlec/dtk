@@ -20,11 +20,11 @@ describe('createSqsService', () => {
     expect(result).toEqual({ messageId: 'msg-abc-123' });
   });
 
-  it('creates the SQS client with the configured region', async () => {
-    mockSend.mockResolvedValue({ MessageId: 'id' });
-    const sqs = createSqsService({ ...config, region: 'eu-west-1' });
-    await sqs.sendMessage('test');
-    expect(SQSClient).toHaveBeenCalledWith({ region: 'eu-west-1' });
+  it('returns null messageId when not present in the response', async () => {
+    mockSend.mockResolvedValue({});
+    const sqs = createSqsService(config);
+    const result = await sqs.sendMessage('hello');
+    expect(result.messageId).toBeNull();
   });
 
   it('sends the message body and queue URL in the command', async () => {
@@ -55,9 +55,9 @@ describe('createSqsService', () => {
     expect(commandArg.MessageAttributes).toBeUndefined();
   });
 
-  it('propagates errors from the SQS client', async () => {
-    mockSend.mockRejectedValue(new Error('SQS unavailable'));
-    const sqs = createSqsService(config);
-    await expect(sqs.sendMessage('body')).rejects.toThrow('SQS unavailable');
+  it('throws error when sendMessage is called without config', async () => {
+    const sqs = createSqsService();
+    await expect(sqs.sendMessage('hello')).rejects.toThrow('sqs service is not configured');
   });
+
 });

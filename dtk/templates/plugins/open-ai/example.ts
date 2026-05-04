@@ -1,5 +1,5 @@
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../suite.js";
+import { suite } from "../suite.js";
 
 await suite()
   .openAi({
@@ -24,4 +24,4 @@ await suite()
     console.log("response:", text);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");

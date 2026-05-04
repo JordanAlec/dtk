@@ -4,5 +4,5 @@ export interface SnsConfig {
 }
 
 export interface PublishResult {
-  messageId: string;
+  messageId: string | null;
 }

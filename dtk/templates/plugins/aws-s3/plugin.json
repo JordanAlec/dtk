@@ -1,0 +1,38 @@
+{
+  "name": "aws-s3",
+  "description": "AWS S3 -- upload files, download files, and generate presigned URLs",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.300.0",
+    "@aws-sdk/s3-request-presigner": "^3.300.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/s3.ts" },
+    { "src": "types.ts", "dest": "src/types/aws-s3.ts" },
+    { "src": "service.test.ts", "dest": "src/services/s3.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/aws-s3.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./s3.js" }
+    ]
+  },
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createS3Service } from \"./services/s3.js\";",
+        "import type { S3Config } from \"./types/aws-s3.js\";"
+      ],
+      "configs": "  private s3Config?: S3Config;",
+      "methods": "  s3(config: S3Config): this { this.s3Config = config; return this; }",
+      "services": "        s3: createS3Service(this.s3Config),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { S3Config, UploadOptions, UploadFileResult, DownloadFileResult, PresignedUrlResult } from \"./aws-s3.js\";",
+      "service-types": "    s3: { uploadFile(bucket: string, key: string, filePath: string, options?: UploadOptions): Promise<UploadFileResult>; downloadFile(bucket: string, key: string, localPath: string): Promise<DownloadFileResult>; getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<PresignedUrlResult>; };"
+    }
+  }
+}

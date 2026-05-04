@@ -26,7 +26,7 @@ Steps execute in sequence. Each step receives a shared context (`ctx`) containin
 
 ```ts
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../suite.js";
+import { suite } from "../suite.js";
 
 await suite()
   .oauth({ clientId, clientSecret, tokenUrl })
@@ -39,15 +39,15 @@ await suite()
       headers: { Authorization: `Bearer ${token.access_token}` },
     });
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ### Run options
 
 | Option | Behaviour |
 |---|---|
-| `SuiteRunOption.ThrowOnError` | Stops on first failure and throws |
-| `SuiteRunOption.ContinueOnError` | Logs the failure and moves to the next step |
+| `"throwOnError"` | Stops on first failure and throws |
+| `"stopOnError"` | Logs the failure and stops without throwing |
 
 ---
 
@@ -69,11 +69,11 @@ import "../load-env.js";
 
 ## Writing a runbook
 
-Create a `.ts` file in `src/runbooks/`. Import `load-env.js` first, then import `suite` and `SuiteRunOption` from `suite.js`.
+Create a `.ts` file in `src/runbooks/`. Import `load-env.js` first, then import `suite` from `suite.js`.
 
 ```ts
 import "../load-env.js";
-import { suite, SuiteRunOption } from "../suite.js";
+import { suite } from "../suite.js";
 
 await suite()
   .step("fetch", async (ctx) => {
@@ -81,7 +81,7 @@ await suite()
     console.log(data.name);
     return data;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 Add a script to `package.json` so you can run it with `npm run`:
@@ -116,7 +116,7 @@ await suite()
       headers: { Authorization: `Bearer ${token.access_token}` },
     });
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ### Basic auth
@@ -133,7 +133,7 @@ await suite()
       headers: { Authorization: header },
     });
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ### Bearer token
@@ -150,7 +150,7 @@ await suite()
       headers: { Authorization: header },
     });
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ### JWT claim extraction
@@ -175,7 +175,7 @@ await suite()
     const user = ctx.outputs["get-user"] as { id: number; name: string };
     return ctx.http.get(`https://api.example.com/orders?userId=${user.id}`);
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ---
@@ -231,7 +231,7 @@ await suite()
     console.log("messageId:", result.messageId);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 AWS credentials are picked up automatically from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environment.
@@ -266,8 +266,119 @@ await suite()
     console.log("messageId:", result.messageId);
     return result;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
+
+---
+
+### aws-dynamo
+
+Reads and writes items in AWS DynamoDB tables.
+
+```bash
+dtk add aws-dynamo
+```
+
+Required env vars:
+
+```
+AWS_REGION=
+DYNAMO_TABLE_NAME=
+```
+
+Usage:
+
+```ts
+await suite()
+  .dynamo({ region: process.env.AWS_REGION! })
+  .step("put", async (ctx) => {
+    return ctx.services.dynamo.putItem(process.env.DYNAMO_TABLE_NAME!, {
+      id: "user-123",
+      name: "John Doe",
+    });
+  })
+  .step("get", async (ctx) => {
+    return ctx.services.dynamo.getItem(process.env.DYNAMO_TABLE_NAME!, { id: "user-123" });
+  })
+  .step("update", async (ctx) => {
+    return ctx.services.dynamo.updateItem(
+      process.env.DYNAMO_TABLE_NAME!,
+      { id: "user-123" },
+      {
+        UpdateExpression: "SET #n = :n",
+        ExpressionAttributeNames: { "#n": "name" },
+        ExpressionAttributeValues: { ":n": { S: "Jane Doe" } },
+      }
+    );
+  })
+  .step("query", async (ctx) => {
+    return ctx.services.dynamo.queryItems(process.env.DYNAMO_TABLE_NAME!, {
+      KeyConditionExpression: "#pk = :pk",
+      ExpressionAttributeNames: { "#pk": "id" },
+      ExpressionAttributeValues: { ":pk": { S: "user-123" } },
+    });
+  })
+  .step("scan", async (ctx) => {
+    return ctx.services.dynamo.scanItems(process.env.DYNAMO_TABLE_NAME!, { Limit: 10 });
+  })
+  .step("delete", async (ctx) => {
+    return ctx.services.dynamo.deleteItem(process.env.DYNAMO_TABLE_NAME!, { id: "user-123" });
+  })
+  .run("throwOnError");
+```
+
+AWS credentials are picked up automatically from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environment.
+
+---
+
+### aws-s3
+
+Uploads files, downloads files, and generates presigned URLs for AWS S3.
+
+```bash
+dtk add aws-s3
+```
+
+Required env vars:
+
+```
+AWS_REGION=
+S3_BUCKET_NAME=
+```
+
+Usage:
+
+```ts
+await suite()
+  .s3({ region: process.env.AWS_REGION! })
+  .step("upload", async (ctx) => {
+    return ctx.services.s3.uploadFile(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      "./example.txt",
+      { contentType: "text/plain", metadata: { source: "my-runbook" } }
+    );
+  })
+  .step("presign", async (ctx) => {
+    const result = await ctx.services.s3.getPresignedUrl(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      300
+    );
+    console.log("url:", result.url);
+    return result;
+  })
+  .step("download", async (ctx) => {
+    return ctx.services.s3.downloadFile(
+      process.env.S3_BUCKET_NAME!,
+      "uploads/example.txt",
+      "./downloaded.txt"
+    );
+  })
+  .run("throwOnError");
+```
+
+AWS credentials are picked up automatically from `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in your environment.
 
 ---
 
@@ -294,7 +405,7 @@ await suite()
     const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
     return ctx.services.openAi.response(token, "gpt-4o-mini", "text", "Say hello.");
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ---
@@ -308,7 +419,7 @@ If there is no plugin for the service you need, wire one in manually. Four files
 `src/services/my-service.ts`:
 
 ```ts
-import { httpGet, httpPost } from "../lib/http.js";
+import { httpGet, httpPost, httpPut, httpDelete } from "../lib/http.js";
 
 export interface MyServiceConfig {
   baseUrl: string;
@@ -380,7 +491,7 @@ await suite()
     console.log(item.name);
     return item;
   })
-  .run(SuiteRunOption.ThrowOnError);
+  .run("throwOnError");
 ```
 
 ---
@@ -393,7 +504,7 @@ The core of the project. The `TestSuite` class holds service configs, collects s
 
 ### `src/types/suite.ts`
 
-All shared type definitions: `StepContext`, `StepFn`, `Step`, `SuiteRunOption`, and auth config types. The sentinels (`// dtk:type-imports`, `// dtk:service-types`) are also injection points -- do not remove them.
+All shared type definitions: `StepContext`, `StepFn`, `Step`, the `SuiteRunOption` string union, and auth config types. The sentinels (`// dtk:type-imports`, `// dtk:service-types`) are also injection points -- do not remove them.
 
 ### `src/types/oauth.ts`
 
@@ -401,7 +512,7 @@ All shared type definitions: `StepContext`, `StepFn`, `Step`, `SuiteRunOption`, 
 
 ### `src/lib/http.ts`
 
-Axios wrapper. Provides `httpGet`, `httpPost`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages. Use this inside service factories instead of calling axios directly.
+Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages. Use this inside service factories instead of calling axios directly.
 
 ### `src/lib/oauth.ts`
 

@@ -1,16 +1,15 @@
 import { clientCredentials } from "./lib/oauth.js";
 import { getClaimValues } from "./lib/token.js";
-import { httpGet, httpPost } from "./lib/http.js";
+import { httpGet, httpPost, httpPut, httpDelete } from "./lib/http.js";
 import { basicAuth } from "./lib/basic-auth.js";
 import { bearerToken } from "./lib/bearer-token.js";
 // dtk:imports
 
-import { SuiteRunOption } from "./types/suite.js";
-import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step } from "./types/suite.js";
+import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step, SuiteRunOption } from "./types/suite.js";
 
-export { SuiteRunOption };
+export type { SuiteRunOption };
 
-class TestSuite {
+class Suite {
   private steps: Step[] = [];
   private oauthConfig?: OAuthConfig;
   private basicAuthConfig?: BasicAuthConfig;
@@ -40,6 +39,8 @@ class TestSuite {
       http: {
         get: httpGet,
         post: httpPost,
+        put: httpPut,
+        delete: httpDelete,
       },
       services: {
         // dtk:services
@@ -57,13 +58,13 @@ class TestSuite {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[FAIL] ${step.name}: ${message}`);
-        if (option === SuiteRunOption.ThrowOnError) throw err;
+        if (option === "throwOnError") throw err;
         else break;
       }
     }
   }
 }
 
-export function suite(): TestSuite {
-  return new TestSuite();
+export function suite(): Suite {
+  return new Suite();
 }
