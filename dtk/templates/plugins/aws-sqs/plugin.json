@@ -2,7 +2,7 @@
   "name": "aws-sqs",
   "description": "AWS SQS -- send messages to a queue",
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.0.0"
+    "@aws-sdk/client-sqs": "^3.300.0"
   },
   "files": [
     { "src": "service.ts", "dest": "src/services/sqs.ts" },

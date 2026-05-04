@@ -2,8 +2,8 @@
   "name": "aws-s3",
   "description": "AWS S3 -- upload files, download files, and generate presigned URLs",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.0.0",
-    "@aws-sdk/s3-request-presigner": "^3.0.0"
+    "@aws-sdk/client-s3": "^3.300.0",
+    "@aws-sdk/s3-request-presigner": "^3.300.0"
   },
   "files": [
     { "src": "service.ts", "dest": "src/services/s3.ts" },

@@ -2,7 +2,7 @@
   "name": "aws-sns",
   "description": "AWS SNS -- publish messages to a topic",
   "dependencies": {
-    "@aws-sdk/client-sns": "^3.0.0"
+    "@aws-sdk/client-sns": "^3.300.0"
   },
   "files": [
     { "src": "service.ts", "dest": "src/services/sns.ts" },
