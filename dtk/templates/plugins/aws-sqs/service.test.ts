@@ -55,5 +55,9 @@ describe('createSqsService', () => {
     expect(commandArg.MessageAttributes).toBeUndefined();
   });
 
+  it('throws error when sendMessage is called without config', async () => {
+    const sqs = createSqsService();
+    await expect(sqs.sendMessage('hello')).rejects.toThrow('sqs service is not configured');
+  });
 
 });

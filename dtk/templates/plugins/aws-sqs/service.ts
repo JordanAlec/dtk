@@ -2,14 +2,17 @@ import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import type { SqsConfig, SendMessageResult } from "./types.js";
 
 export function createSqsService(config?: SqsConfig) {
-  if (!config) throw new Error("sqs service is not configured -- call .sqs(config) on the suite");
-  const client = new SQSClient({ region: config.region });
+  const ensureConfig = () => {
+    if (!config) throw new Error("sqs service is not configured -- call .sqs(config) on the suite");
+  };
+  const client = config ? new SQSClient({ region: config.region }) : null;
 
   return {
     sendMessage: async (body: string, attributes?: Record<string, string>): Promise<SendMessageResult> => {
-      const response = await client.send(
+      ensureConfig();
+      const response = await client!.send(
         new SendMessageCommand({
-          QueueUrl: config.queueUrl,
+          QueueUrl: config!.queueUrl,
           MessageBody: body,
           ...(attributes && {
             MessageAttributes: Object.fromEntries(

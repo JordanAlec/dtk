@@ -71,4 +71,9 @@ describe('createSnsService', () => {
     expect(commandArg.MessageAttributes).toBeUndefined();
   });
 
+  it('throws error when publish is called without config', async () => {
+    const sns = createSnsService();
+    await expect(sns.publish('hello')).rejects.toThrow('sns service is not configured');
+  });
+
 });
