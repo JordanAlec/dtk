@@ -22,5 +22,5 @@ export const initCommand = new Command('init')
     }
 
     console.log('Project scaffolded. Installing dependencies...');
-    execSync('npm install', { cwd: dest, stdio: 'inherit' });
+    execSync('npm install --no-workspaces', { cwd: dest, stdio: 'inherit' });
   });
