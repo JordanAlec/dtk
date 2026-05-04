@@ -76,7 +76,7 @@ export const addCommand = new Command('add')
       const envPath = join(destDir, '.env.template');
       const envExists = await access(envPath).then(() => true).catch(() => false);
       const envContent = envExists ? await readFile(envPath, 'utf8') : '';
-      const missingLines = fragment.split('\n').filter(line => !envContent.includes(line));
+      const missingLines = fragment.split('\n').map(l => l.trim()).filter(l => l && !envContent.includes(l));
       if (missingLines.length > 0) {
         const base = envContent.trimEnd();
         await writeFile(envPath, (base ? base + '\n' : '') + missingLines.join('\n') + '\n', 'utf8');
