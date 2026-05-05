@@ -1,6 +1,7 @@
 import { clientCredentials } from "./lib/oauth.js";
 import { getClaimValues } from "./lib/token.js";
 import { httpGet, httpPost, httpPut, httpDelete } from "./lib/http.js";
+import { readFile, readJson, writeFile, writeJson, appendFile, fileExists, deleteFile, ensureDir, copyFile, moveFile, listDir } from "./lib/file.js";
 import { basicAuth } from "./lib/basic-auth.js";
 import { bearerToken } from "./lib/bearer-token.js";
 // dtk:imports
@@ -41,6 +42,19 @@ class Suite {
         post: httpPost,
         put: httpPut,
         delete: httpDelete,
+      },
+      file: {
+        read: readFile,
+        readJson,
+        write: writeFile,
+        writeJson,
+        append: appendFile,
+        exists: fileExists,
+        delete: deleteFile,
+        ensureDir,
+        copy: copyFile,
+        move: moveFile,
+        list: listDir,
       },
       services: {
         // dtk:services

@@ -22,6 +22,19 @@ export interface StepContext {
     put<TBody, TResponse>(url: string, body: TBody, options?: HttpOptions): Promise<TResponse>;
     delete(url: string, options?: HttpOptions): Promise<number>;
   };
+  file: {
+    read(path: string): Promise<string>;
+    readJson<T = unknown>(path: string): Promise<T>;
+    write(path: string, content: string): Promise<void>;
+    writeJson(path: string, data: unknown, indent?: number): Promise<void>;
+    append(path: string, content: string): Promise<void>;
+    exists(path: string): Promise<boolean>;
+    delete(path: string): Promise<void>;
+    ensureDir(path: string): Promise<void>;
+    copy(src: string, dest: string): Promise<void>;
+    move(src: string, dest: string): Promise<void>;
+    list(path: string): Promise<string[]>;
+  };
   services: {
     // dtk:service-types
   };
