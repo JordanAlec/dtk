@@ -51,7 +51,7 @@ See `GUIDE.md` for full details.
 src/
   suite.ts          # core runner -- extend this with custom services
   load-env.ts       # dotenv bootstrap -- import first in every runbook
-  lib/              # HTTP client, OAuth, auth helpers
+  lib/              # HTTP client, OAuth, auth helpers, file system utilities
   types/            # type definitions
   services/         # service factories added by plugins or custom code
   runbooks/         # your runbook scripts

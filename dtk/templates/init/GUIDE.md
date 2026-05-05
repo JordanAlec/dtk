@@ -512,7 +512,9 @@ All shared type definitions: `StepContext`, `StepFn`, `Step`, the `SuiteRunOptio
 
 ### `src/lib/http.ts`
 
-Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages. Use this inside service factories instead of calling axios directly.
+Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages (`HTTP 404: ...`). Use this inside service factories instead of calling axios directly.
+
+All four functions accept an optional `HttpOptions` argument with `headers` and `retry`. When `retry` is set, failed requests are retried up to `attempts` times with either fixed or exponential backoff (`delayMs`, `maxDelayMs`). Provide a `retryOn` predicate to control which errors trigger a retry. `httpDelete` returns the HTTP status code as a `number`.
 
 ### `src/lib/oauth.ts`
 
@@ -529,6 +531,10 @@ Returns `<prefix> <token>` (e.g. `Bearer sk-abc123`) ready to use as an `Authori
 ### `src/lib/token.ts`
 
 `getClaimValues(token)` decodes the payload of a JWT and returns the claims as a plain object. Does not verify the signature.
+
+### `src/lib/file.ts`
+
+File system utilities. Provides `readFile`, `readJson<T>`, `writeFile`, `writeJson`, `appendFile`, `fileExists`, `deleteFile`, `ensureDir`, `copyFile`, `moveFile`, and `listDir`. All functions wrap `node:fs/promises` and normalise errors into readable messages (`file not found`, `permission denied`, `path is a directory`). Parent directories are created automatically on write, append, and copy.
 
 ### `src/load-env.ts`
 

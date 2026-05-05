@@ -678,6 +678,7 @@ my-project/
       basic-auth.ts       # base64 Basic auth header builder
       bearer-token.ts     # Bearer token header builder
       token.ts            # JWT claim decoder
+      file.ts             # readFile / writeFile / copyFile / moveFile / deleteFile / listDir etc.
     types/
       suite.ts            # StepContext, SuiteRunOption string union, auth types -- do not delete sentinel comments
       oauth.ts            # OAuthConfig, TokenResponse
