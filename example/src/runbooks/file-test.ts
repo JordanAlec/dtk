@@ -1,4 +1,3 @@
-import axios from 'axios';
 import "../load-env.js";
 import { suite } from "../suite.js";
 
