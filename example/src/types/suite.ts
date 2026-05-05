@@ -1,9 +1,9 @@
 import type { HttpOptions } from "./http.js";
 import type { OAuthConfig, TokenResponse } from "./oauth.js";
-import type { DynamoConfig, PutItemResult, GetItemResult, QueryResult, DeleteItemResult, UpdateItemResult } from "./aws-dynamo.js";
-import type { S3Config, UploadOptions, UploadFileResult, DownloadFileResult, PresignedUrlResult } from "./aws-s3.js";
 import type { SqsConfig, SendMessageResult } from "./aws-sqs.js";
 import type { SnsConfig, PublishResult } from "./aws-sns.js";
+import type { DynamoConfig, PutItemResult, GetItemResult, QueryResult, DeleteItemResult, UpdateItemResult } from "./aws-dynamo.js";
+import type { S3Config, UploadOptions, UploadFileResult, DownloadFileResult, PresignedUrlResult } from "./aws-s3.js";
 import type { OpenAiConfig, OpenAiListModels, OpenAiResponse } from "./open-ai.js";
 // dtk:type-imports
 
@@ -27,11 +27,24 @@ export interface StepContext {
     put<TBody, TResponse>(url: string, body: TBody, options?: HttpOptions): Promise<TResponse>;
     delete(url: string, options?: HttpOptions): Promise<number>;
   };
+  file: {
+    read(path: string): Promise<string>;
+    readJson<T = unknown>(path: string): Promise<T>;
+    write(path: string, content: string): Promise<void>;
+    writeJson(path: string, data: unknown, indent?: number): Promise<void>;
+    append(path: string, content: string): Promise<void>;
+    exists(path: string): Promise<boolean>;
+    delete(path: string): Promise<void>;
+    ensureDir(path: string): Promise<void>;
+    copy(src: string, dest: string): Promise<void>;
+    move(src: string, dest: string): Promise<void>;
+    list(path: string): Promise<string[]>;
+  };
   services: {
-        dynamo: { putItem(tableName: string, item: Record<string, any>): Promise<PutItemResult>; getItem(tableName: string, key: Record<string, any>): Promise<GetItemResult>; queryItems(tableName: string, params: Record<string, any>): Promise<QueryResult>; updateItem(tableName: string, key: Record<string, any>, params: Record<string, any>): Promise<UpdateItemResult>; deleteItem(tableName: string, key: Record<string, any>): Promise<DeleteItemResult>; scanItems(tableName: string, params?: Record<string, any>): Promise<QueryResult>; };
-    s3: { uploadFile(bucket: string, key: string, filePath: string, options?: UploadOptions): Promise<UploadFileResult>; downloadFile(bucket: string, key: string, localPath: string): Promise<DownloadFileResult>; getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<PresignedUrlResult>; };
-    sqs: { sendMessage(body: string, attributes?: Record<string, string>): Promise<SendMessageResult>; };
+        sqs: { sendMessage(body: string, attributes?: Record<string, string>): Promise<SendMessageResult>; };
     sns: { publish(message: string, subject?: string, attributes?: Record<string, string>): Promise<PublishResult>; };
+    dynamo: { putItem(tableName: string, item: Record<string, any>): Promise<PutItemResult>; getItem(tableName: string, key: Record<string, any>): Promise<GetItemResult>; queryItems(tableName: string, params: Record<string, any>): Promise<QueryResult>; updateItem(tableName: string, key: Record<string, any>, params: Record<string, any>): Promise<UpdateItemResult>; deleteItem(tableName: string, key: Record<string, any>): Promise<DeleteItemResult>; scanItems(tableName: string, params?: Record<string, any>): Promise<QueryResult>; };
+    s3: { uploadFile(bucket: string, key: string, filePath: string, options?: UploadOptions): Promise<UploadFileResult>; downloadFile(bucket: string, key: string, localPath: string): Promise<DownloadFileResult>; getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<PresignedUrlResult>; };
     openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>; };
 // dtk:service-types
   };

@@ -1,14 +1,15 @@
 {
-  "name": "my-dtk-project",
+  "name": "example",
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "runbook:file": "tsx src/runbooks/file-test.ts",
     "runbook:example": "tsx src/runbooks/example.ts",
-    "test": "node node_modules/jest/bin/jest.js",
-    "runbook:aws-dynamo": "tsx src/runbooks/aws-dynamo.ts",
-    "runbook:aws-s3": "tsx src/runbooks/aws-s3.ts",
+    "test": "jest",
     "runbook:aws-sqs": "tsx src/runbooks/aws-sqs.ts",
     "runbook:aws-sns": "tsx src/runbooks/aws-sns.ts",
+    "runbook:aws-dynamo": "tsx src/runbooks/aws-dynamo.ts",
+    "runbook:aws-s3": "tsx src/runbooks/aws-s3.ts",
     "runbook:open-ai": "tsx src/runbooks/open-ai.ts"
   },
   "dependencies": {
