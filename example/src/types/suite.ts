@@ -46,6 +46,7 @@ export interface StepContext {
     dynamo: { putItem(tableName: string, item: Record<string, any>): Promise<PutItemResult>; getItem(tableName: string, key: Record<string, any>): Promise<GetItemResult>; queryItems(tableName: string, params: Record<string, any>): Promise<QueryResult>; updateItem(tableName: string, key: Record<string, any>, params: Record<string, any>): Promise<UpdateItemResult>; deleteItem(tableName: string, key: Record<string, any>): Promise<DeleteItemResult>; scanItems(tableName: string, params?: Record<string, any>): Promise<QueryResult>; };
     s3: { uploadFile(bucket: string, key: string, filePath: string, options?: UploadOptions): Promise<UploadFileResult>; downloadFile(bucket: string, key: string, localPath: string): Promise<DownloadFileResult>; getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<PresignedUrlResult>; };
     openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>; };
+    redis: { get(key: string): Promise<string | null>; set(key: string, value: string, ttlSeconds?: number): Promise<void>; del(key: string): Promise<number>; exists(key: string): Promise<boolean>; expire(key: string, ttlSeconds: number): Promise<boolean>; hset(key: string, field: string, value: string): Promise<number>; hget(key: string, field: string): Promise<string | null>; keys(pattern: string): Promise<string[]>; quit(): Promise<void>; };
 // dtk:service-types
   };
 }

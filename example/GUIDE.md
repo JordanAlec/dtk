@@ -382,6 +382,57 @@ AWS credentials are picked up automatically from `AWS_ACCESS_KEY_ID` and `AWS_SE
 
 ---
 
+### redis
+
+Reads and writes data in a Redis cache.
+
+```bash
+dtk add redis
+```
+
+Required env vars:
+
+```
+REDIS_URL=redis://localhost:6379
+```
+
+Usage:
+
+```ts
+await suite()
+  .redis({ url: process.env.REDIS_URL! })
+  .step("write", async (ctx) => {
+    await ctx.services.redis.set("key", "value", 3600);
+  })
+  .step("read", async (ctx) => {
+    const value = await ctx.services.redis.get("key");
+    console.log("value:", value);
+    return value;
+  })
+  .step("disconnect", async (ctx) => {
+    await ctx.services.redis.quit();
+  })
+  .run("stopOnError");
+```
+
+> **The `disconnect` step is required.** The Redis client holds an open TCP connection. Without calling `quit()`, the Node.js process will hang indefinitely after the runbook finishes. Always use `stopOnError` (not `throwOnError`) so that the `disconnect` step is guaranteed to run even when an earlier step fails.
+
+Available methods on `ctx.services.redis`:
+
+| Method | Description |
+|---|---|
+| `get(key)` | Returns the string value or `null` if the key does not exist |
+| `set(key, value, ttlSeconds?)` | Sets a key, with an optional TTL in seconds |
+| `del(key)` | Deletes a key, returns the number of keys removed |
+| `exists(key)` | Returns `true` if the key exists |
+| `expire(key, ttlSeconds)` | Sets a TTL on an existing key, returns `true` if applied |
+| `hset(key, field, value)` | Sets a field on a hash, returns the number of new fields added |
+| `hget(key, field)` | Returns a hash field value or `null` |
+| `keys(pattern)` | Returns all keys matching a glob pattern (e.g. `user:*`) |
+| `quit()` | Closes the connection -- must be called at the end of every runbook |
+
+---
+
 ### open-ai
 
 Lists models and sends responses via the OpenAI API.
@@ -512,7 +563,9 @@ All shared type definitions: `StepContext`, `StepFn`, `Step`, the `SuiteRunOptio
 
 ### `src/lib/http.ts`
 
-Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages. Use this inside service factories instead of calling axios directly.
+Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages (`HTTP 404: ...`). Use this inside service factories instead of calling axios directly.
+
+All four functions accept an optional `HttpOptions` argument with `headers` and `retry`. When `retry` is set, failed requests are retried up to `attempts` times with either fixed or exponential backoff (`delayMs`, `maxDelayMs`). Provide a `retryOn` predicate to control which errors trigger a retry. `httpDelete` returns the HTTP status code as a `number`.
 
 ### `src/lib/oauth.ts`
 
@@ -529,6 +582,10 @@ Returns `<prefix> <token>` (e.g. `Bearer sk-abc123`) ready to use as an `Authori
 ### `src/lib/token.ts`
 
 `getClaimValues(token)` decodes the payload of a JWT and returns the claims as a plain object. Does not verify the signature.
+
+### `src/lib/file.ts`
+
+File system utilities. Provides `readFile`, `readJson<T>`, `writeFile`, `writeJson`, `appendFile`, `fileExists`, `deleteFile`, `ensureDir`, `copyFile`, `moveFile`, and `listDir`. All functions wrap `node:fs/promises` and normalise errors into readable messages (`file not found`, `permission denied`, `path is a directory`). Parent directories are created automatically on write, append, and copy.
 
 ### `src/load-env.ts`
 

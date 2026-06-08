@@ -1,0 +1,36 @@
+{
+  "name": "redis",
+  "description": "Redis -- get, set, del, exists, expire, hset, hget, keys",
+  "dependencies": {
+    "redis": "^4.7.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/redis.ts" },
+    { "src": "types.ts", "dest": "src/types/redis.ts" },
+    { "src": "service.test.ts", "dest": "src/services/redis.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/redis.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./redis.js" }
+    ]
+  },
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createRedisService } from \"./services/redis.js\";",
+        "import type { RedisConfig } from \"./types/redis.js\";"
+      ],
+      "configs": "  private redisConfig?: RedisConfig;",
+      "methods": "  redis(config: RedisConfig): this { this.redisConfig = config; return this; }",
+      "services": "        redis: createRedisService(this.redisConfig),"
+    },
+    "src/types/suite.ts": {
+      "service-types": "    redis: { get(key: string): Promise<string | null>; set(key: string, value: string, ttlSeconds?: number): Promise<void>; del(key: string): Promise<number>; exists(key: string): Promise<boolean>; expire(key: string, ttlSeconds: number): Promise<boolean>; hset(key: string, field: string, value: string): Promise<number>; hget(key: string, field: string): Promise<string | null>; keys(pattern: string): Promise<string[]>; quit(): Promise<void>; };"
+    }
+  }
+}
