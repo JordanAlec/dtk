@@ -369,6 +369,76 @@ await suite()
 
 ---
 
+### sql
+
+Runs raw SQL queries, executes statements, calls stored procedures, and runs transactions against PostgreSQL, MySQL, or MSSQL via knex.
+
+```bash
+dtk add sql
+```
+
+Env vars appended to `.env.template`:
+
+```
+SQL_CONNECTION_STRING=
+```
+
+Because the sql service holds an open connection pool, it must always be disconnected after use. Create the service outside the suite and call `disconnect()` in a `finally` block so it is guaranteed to run even when a step fails:
+
+```ts
+import "../load-env.js";
+import { suite } from "../suite.js";
+import { createSqlService } from "../services/sql.js";
+
+const sql = createSqlService({
+  client: 'pg', // or 'mysql2' or 'mssql'
+  connection: process.env.SQL_CONNECTION_STRING!,
+});
+
+try {
+  await suite()
+    .step("query", async () => {
+      const rows = await sql.query<{ id: number; name: string }>(
+        "SELECT id, name FROM users WHERE active = ?",
+        [true]
+      );
+      console.log(rows);
+      return rows;
+    })
+    .step("insert", async () => {
+      const affected = await sql.execute(
+        "INSERT INTO users (name, email, active) VALUES (?, ?, ?)",
+        ["Alice", "alice@example.com", true]
+      );
+      console.log("rows inserted:", affected);
+      return affected;
+    })
+    .step("transaction", async () => {
+      await sql.transaction(async (ops) => {
+        await ops.execute("UPDATE accounts SET balance = balance - ? WHERE id = ?", [100, 1]);
+        await ops.execute("UPDATE accounts SET balance = balance + ? WHERE id = ?", [100, 2]);
+      });
+    })
+    .run("stopOnError");
+} finally {
+  await sql.disconnect();
+}
+```
+
+Available methods on the sql service:
+
+| Method | Description |
+|---|---|
+| `query<T>(sql, params?)` | Runs a SELECT and returns the result rows as `T[]` |
+| `execute(sql, params?)` | Runs an INSERT / UPDATE / DELETE and returns the affected row count |
+| `callProc<T>(name, params?)` | Calls a stored procedure and returns result rows as `T[]` |
+| `transaction(fn)` | Runs `fn` inside a transaction; rolls back automatically on error |
+| `disconnect()` | Destroys the connection pool -- always call this in a `finally` block |
+
+Supported clients: `pg` (PostgreSQL), `mysql2` (MySQL / MariaDB), `mssql` (SQL Server).
+
+---
+
 ## Writing runbooks
 
 A runbook is a TypeScript file that uses the `suite()` builder to chain steps and run them in sequence.
@@ -780,4 +850,5 @@ templates/
     aws-s3/
     open-ai/
     redis/
+    sql/
 ```

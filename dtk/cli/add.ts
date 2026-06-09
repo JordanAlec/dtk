@@ -15,6 +15,7 @@ const PLUGIN_MAP: Record<string, string> = {
   'aws-s3': 'aws-s3',
   'open-ai': 'open-ai',
   'redis': 'redis',
+  'sql': 'sql',
 };
 
 interface PluginTransform {

@@ -5,6 +5,7 @@ import type { SnsConfig, PublishResult } from "./aws-sns.js";
 import type { DynamoConfig, PutItemResult, GetItemResult, QueryResult, DeleteItemResult, UpdateItemResult } from "./aws-dynamo.js";
 import type { S3Config, UploadOptions, UploadFileResult, DownloadFileResult, PresignedUrlResult } from "./aws-s3.js";
 import type { OpenAiConfig, OpenAiListModels, OpenAiResponse } from "./open-ai.js";
+import type { SqlOps } from "./sql.js";
 // dtk:type-imports
 
 export type { HttpOptions };
@@ -47,6 +48,7 @@ export interface StepContext {
     s3: { uploadFile(bucket: string, key: string, filePath: string, options?: UploadOptions): Promise<UploadFileResult>; downloadFile(bucket: string, key: string, localPath: string): Promise<DownloadFileResult>; getPresignedUrl(bucket: string, key: string, expiresIn?: number): Promise<PresignedUrlResult>; };
     openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>; };
     redis: { get(key: string): Promise<string | null>; set(key: string, value: string, ttlSeconds?: number): Promise<void>; del(key: string): Promise<number>; exists(key: string): Promise<boolean>; expire(key: string, ttlSeconds: number): Promise<boolean>; hset(key: string, field: string, value: string): Promise<number>; hget(key: string, field: string): Promise<string | null>; keys(pattern: string): Promise<string[]>; quit(): Promise<void>; };
+    sql: { query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>; execute(sql: string, params?: unknown[]): Promise<number>; callProc<T = Record<string, unknown>>(name: string, params?: unknown[]): Promise<T[]>; transaction<T>(fn: (ops: SqlOps) => Promise<T>): Promise<T>; disconnect(): Promise<void>; };
 // dtk:service-types
   };
 }
