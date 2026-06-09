@@ -16,6 +16,8 @@ import { createOpenAIService } from "./services/open-ai.js";
 import type { OpenAiConfig } from "./types/open-ai.js";
 import { createRedisService } from "./services/redis.js";
 import type { RedisConfig } from "./types/redis.js";
+import { createSqlService } from "./services/sql.js";
+import type { SqlConfig } from "./types/sql.js";
 // dtk:imports
 
 import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step, SuiteRunOption } from "./types/suite.js";
@@ -33,6 +35,7 @@ class Suite {
   private s3Config?: S3Config;
   private openAiConfig?: OpenAiConfig;
   private redisConfig?: RedisConfig;
+  private sqlConfig?: SqlConfig;
 // dtk:configs
 
   oauth(config: OAuthConfig): this { this.oauthConfig = config; return this; }
@@ -44,6 +47,7 @@ class Suite {
   s3(config: S3Config): this { this.s3Config = config; return this; }
   openAi(config: OpenAiConfig): this { this.openAiConfig = config; return this; }
   redis(config: RedisConfig): this { this.redisConfig = config; return this; }
+  sql(config: SqlConfig): this { this.sqlConfig = config; return this; }
 // dtk:methods
 
   step(name: string, fn: StepFn): this {
@@ -87,6 +91,7 @@ class Suite {
         s3: createS3Service(this.s3Config),
         openAi: createOpenAIService(this.openAiConfig),
         redis: createRedisService(this.redisConfig),
+        sql: createSqlService(this.sqlConfig),
 // dtk:services
       },
     };
