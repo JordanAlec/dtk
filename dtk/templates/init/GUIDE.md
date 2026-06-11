@@ -633,9 +633,33 @@ All shared type definitions: `StepContext`, `StepFn`, `Step`, the `SuiteRunOptio
 
 ### `src/lib/http.ts`
 
-Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Normalises errors into plain `Error` objects with readable messages (`HTTP 404: ...`). Use this inside service factories instead of calling axios directly.
+Axios wrapper. Provides `httpGet`, `httpPost`, `httpPut`, and `httpDelete`. Use this inside service factories instead of calling axios directly.
 
-All four functions accept an optional `HttpOptions` argument with `headers` and `retry`. When `retry` is set, failed requests are retried up to `attempts` times with either fixed or exponential backoff (`delayMs`, `maxDelayMs`). Provide a `retryOn` predicate to control which errors trigger a retry. `httpDelete` returns the HTTP status code as a `number`.
+All four functions accept an optional `HttpOptions` argument:
+
+| Option | Type | Description |
+|---|---|---|
+| `headers` | `Record<string, string>` | Request headers |
+| `timeoutMs` | `number` | Abort the request if no response arrives within this many milliseconds |
+| `retry` | `RetryConfig` | Retry on failure (see below) |
+| `rateLimiter` | `{ throttle(): Promise<void> }` | Called before each request; use the exported `RateLimiter` class |
+
+**Retry** -- when `retry` is set, failed requests are retried up to `attempts` times with either fixed or exponential backoff (`delayMs`, `maxDelayMs`). Provide a `retryOn` predicate to control which errors trigger a retry.
+
+**Rate limiting** -- create a shared `RateLimiter` instance and pass it via `rateLimiter`. The limiter uses a sliding window: `new RateLimiter(maxRequests, windowMs)`.
+
+```ts
+import { RateLimiter } from "../lib/http.js";
+
+const limiter = new RateLimiter(10, 1000); // max 10 requests per second
+
+await ctx.http.get("https://api.example.com/data", {
+  timeoutMs: 5000,
+  rateLimiter: limiter,
+});
+```
+
+**Errors** -- HTTP errors throw `HttpError` (exported from `lib/http.ts`), which extends `Error` and adds structured fields: `status` (HTTP status code), `url`, `method`, and `body` (raw response body). Non-HTTP errors (network failures, timeouts) throw a plain `Error`. `httpDelete` returns the HTTP status code as a `number` on success.
 
 ### `src/lib/oauth.ts`
 
