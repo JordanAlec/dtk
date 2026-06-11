@@ -1,4 +1,4 @@
-import { httpGet, httpPost, httpPut, httpDelete } from './http.js';
+import { httpGet, httpPost, httpPut, httpDelete, HttpError, RateLimiter } from './http.js';
 
 jest.mock('axios');
 import axios from 'axios';
@@ -53,6 +53,152 @@ describe('httpGet', () => {
   });
 });
 
+describe('HttpError', () => {
+  it('throws HttpError with status, url, method and body on an axios error', async () => {
+    const body = { Detail: 'Not found' };
+    mockAxios.get.mockRejectedValue({ response: { status: 404, data: body }, message: 'Request failed' });
+    mockAxios.isAxiosError.mockReturnValue(true);
+
+    const err = await httpGet('https://api.example.com/item').catch((e) => e) as HttpError;
+    expect(err).toBeInstanceOf(HttpError);
+    expect(err.status).toBe(404);
+    expect(err.url).toBe('https://api.example.com/item');
+    expect(err.method).toBe('GET');
+    expect(err.body).toEqual(body);
+    expect(err.message).toBe('HTTP 404: Not found');
+  });
+
+  it('sets the correct method for POST, PUT and DELETE', async () => {
+    const axiosError = { response: { status: 500, data: {} }, message: 'err' };
+    mockAxios.isAxiosError.mockReturnValue(true);
+
+    mockAxios.post.mockRejectedValue(axiosError);
+    const postErr = await httpPost('https://api.example.com/items', {}).catch((e) => e) as HttpError;
+    expect(postErr.method).toBe('POST');
+
+    mockAxios.put.mockRejectedValue(axiosError);
+    const putErr = await httpPut('https://api.example.com/items/1', {}).catch((e) => e) as HttpError;
+    expect(putErr.method).toBe('PUT');
+
+    mockAxios.delete.mockRejectedValue(axiosError);
+    const deleteErr = await httpDelete('https://api.example.com/items/1').catch((e) => e) as HttpError;
+    expect(deleteErr.method).toBe('DELETE');
+  });
+
+  it('does not throw HttpError for non-axios errors', async () => {
+    mockAxios.get.mockRejectedValue(new Error('network failure'));
+    const err = await httpGet('https://api.example.com/item').catch((e) => e) as Error;
+    expect(err).not.toBeInstanceOf(HttpError);
+    expect(err.message).toBe('network failure');
+  });
+});
+
+describe('timeout', () => {
+  it('passes timeoutMs to axios as timeout', async () => {
+    mockAxios.get.mockResolvedValue({ data: {} });
+    await httpGet('https://api.example.com/item', { timeoutMs: 5000 });
+    expect(mockAxios.get).toHaveBeenCalledWith('https://api.example.com/item', {
+      headers: undefined,
+      timeout: 5000,
+    });
+  });
+
+  it('does not include timeout in axios config when timeoutMs is not set', async () => {
+    mockAxios.get.mockResolvedValue({ data: {} });
+    await httpGet('https://api.example.com/item');
+    expect(mockAxios.get).toHaveBeenCalledWith('https://api.example.com/item', {
+      headers: undefined,
+    });
+  });
+
+  it('passes timeoutMs through for POST, PUT and DELETE', async () => {
+    mockAxios.post.mockResolvedValue({ data: {} });
+    await httpPost('https://api.example.com/items', {}, { timeoutMs: 3000 });
+    expect(mockAxios.post).toHaveBeenCalledWith(
+      'https://api.example.com/items',
+      {},
+      { headers: undefined, timeout: 3000 }
+    );
+
+    mockAxios.put.mockResolvedValue({ data: {} });
+    await httpPut('https://api.example.com/items/1', {}, { timeoutMs: 3000 });
+    expect(mockAxios.put).toHaveBeenCalledWith(
+      'https://api.example.com/items/1',
+      {},
+      { headers: undefined, timeout: 3000 }
+    );
+
+    mockAxios.delete.mockResolvedValue({ status: 204 });
+    await httpDelete('https://api.example.com/items/1', { timeoutMs: 3000 });
+    expect(mockAxios.delete).toHaveBeenCalledWith(
+      'https://api.example.com/items/1',
+      { headers: undefined, timeout: 3000 }
+    );
+  });
+});
+
+describe('rate limiter', () => {
+  it('calls rateLimiter.throttle() before a GET request', async () => {
+    mockAxios.get.mockResolvedValue({ data: {} });
+    const rateLimiter = { throttle: jest.fn().mockResolvedValue(undefined) };
+    await httpGet('https://api.example.com/item', { rateLimiter });
+    expect(rateLimiter.throttle).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls rateLimiter.throttle() on every retry attempt', async () => {
+    mockAxios.get
+      .mockRejectedValueOnce(new Error('transient'))
+      .mockResolvedValueOnce({ data: {} });
+    const rateLimiter = { throttle: jest.fn().mockResolvedValue(undefined) };
+    await httpGet('https://api.example.com/item', {
+      rateLimiter,
+      retry: { attempts: 1, delayMs: 0, retryOn: () => true },
+    });
+    expect(rateLimiter.throttle).toHaveBeenCalledTimes(2);
+  });
+
+  it('calls rateLimiter.throttle() before POST, PUT and DELETE', async () => {
+    const rateLimiter = { throttle: jest.fn().mockResolvedValue(undefined) };
+
+    mockAxios.post.mockResolvedValue({ data: {} });
+    await httpPost('https://api.example.com/items', {}, { rateLimiter });
+    expect(rateLimiter.throttle).toHaveBeenCalledTimes(1);
+
+    mockAxios.put.mockResolvedValue({ data: {} });
+    await httpPut('https://api.example.com/items/1', {}, { rateLimiter });
+    expect(rateLimiter.throttle).toHaveBeenCalledTimes(2);
+
+    mockAxios.delete.mockResolvedValue({ status: 204 });
+    await httpDelete('https://api.example.com/items/1', { rateLimiter });
+    expect(rateLimiter.throttle).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('RateLimiter', () => {
+  it('resolves immediately when under the request limit', async () => {
+    const limiter = new RateLimiter(3, 1000);
+    await expect(limiter.throttle()).resolves.toBeUndefined();
+    await expect(limiter.throttle()).resolves.toBeUndefined();
+    await expect(limiter.throttle()).resolves.toBeUndefined();
+  });
+
+  it('delays the next request when the window limit is reached', async () => {
+    const limiter = new RateLimiter(1, 100);
+    const start = Date.now();
+    await limiter.throttle();
+    await limiter.throttle();
+    expect(Date.now() - start).toBeGreaterThanOrEqual(90);
+  });
+
+  it('throws when maxRequests is 0', () => {
+    expect(() => new RateLimiter(0, 1000)).toThrow('RateLimiter: maxRequests must be greater than 0');
+  });
+
+  it('throws when maxRequests is negative', () => {
+    expect(() => new RateLimiter(-1, 1000)).toThrow('RateLimiter: maxRequests must be greater than 0');
+  });
+});
+
 describe('httpPost', () => {
   it('returns the response data on success', async () => {
     mockAxios.post.mockResolvedValue({ data: { created: true } });
@@ -69,7 +215,6 @@ describe('httpPost', () => {
       { headers: { 'Content-Type': 'application/json' } }
     );
   });
-
 });
 
 describe('httpPut', () => {
@@ -88,7 +233,6 @@ describe('httpPut', () => {
       { headers: { 'Content-Type': 'application/json' } }
     );
   });
-
 });
 
 describe('httpDelete', () => {

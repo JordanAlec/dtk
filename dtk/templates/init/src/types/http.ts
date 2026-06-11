@@ -8,5 +8,7 @@ export interface RetryConfig {
 
 export interface HttpOptions {
   headers?: Record<string, string>;
+  timeoutMs?: number;
   retry?: RetryConfig;
+  rateLimiter?: { throttle(): Promise<void> };
 }

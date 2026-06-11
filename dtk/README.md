@@ -485,7 +485,7 @@ Every step receives `ctx`:
 |---|---|
 | `ctx.outputs` | Return values from all previous steps, keyed by step name |
 | `ctx.auth` | Auth helpers: `clientCredentials`, `basicAuth`, `bearerToken`, `getClaimValues` |
-| `ctx.http` | Generic HTTP client: `get`, `post` |
+| `ctx.http` | Generic HTTP client: `get`, `post`, `put`, `delete`. Accepts `HttpOptions`: `headers`, `timeoutMs`, `retry`, `rateLimiter`. HTTP errors throw `HttpError` with `status`, `url`, `method`, `body` fields. |
 | `ctx.services` | All wired service instances (populated by plugins or custom services) |
 
 ### Auth
@@ -794,7 +794,7 @@ my-project/
     suite.ts              # TestSuite builder and runner -- do not delete sentinel comments
     load-env.ts           # dotenv bootstrap -- import this first in every runbook
     lib/
-      http.ts             # httpGet / httpPost / httpPut / httpDelete (axios wrapper)
+      http.ts             # httpGet / httpPost / httpPut / httpDelete -- timeout, rate limiting, HttpError
       oauth.ts            # client credentials OAuth flow
       basic-auth.ts       # base64 Basic auth header builder
       bearer-token.ts     # Bearer token header builder
