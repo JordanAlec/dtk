@@ -2,10 +2,10 @@
   "name": "sql",
   "description": "SQL -- query, execute, callProc, transaction across pg / mysql2 / mssql",
   "dependencies": {
-    "knex": "^3.1.0",
-    "pg": "^8.13.0",
-    "mysql2": "^3.11.0",
-    "mssql": "^11.0.1"
+    "knex": "^3.2.10",
+    "pg": "^8.21.0",
+    "mysql2": "^3.22.5",
+    "mssql": "^12.5.5"
   },
   "files": [
     { "src": "service.ts", "dest": "src/services/sql.ts" },
