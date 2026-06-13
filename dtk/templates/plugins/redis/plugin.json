@@ -2,7 +2,7 @@
   "name": "redis",
   "description": "Redis -- get, set, del, exists, expire, hset, hget, keys",
   "dependencies": {
-    "redis": "^4.7.0"
+    "redis": "^6.0.0"
   },
   "files": [
     { "src": "service.ts", "dest": "src/services/redis.ts" },

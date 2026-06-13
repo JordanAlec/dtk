@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: dtk-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: dtk
+      POSTGRES_USER: dtk
+      POSTGRES_PASSWORD: dtk
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
