@@ -355,14 +355,12 @@ Usage:
 
 ```ts
 await suite()
-  .openAi({ baseUrl: "https://api.openai.com" })
+  .openAi({ apiKey: process.env.OPENAI_API_KEY! })
   .step("list-models", async (ctx) => {
-    const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
-    return ctx.services.openAi.listModels(token);
+    return ctx.services.openAi.listModels();
   })
   .step("send-response", async (ctx) => {
-    const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
-    return ctx.services.openAi.response(token, "gpt-4o-mini", "text", "Say hello.");
+    return ctx.services.openAi.response("gpt-4o-mini", "text", "Say hello.");
   })
   .run("throwOnError");
 ```

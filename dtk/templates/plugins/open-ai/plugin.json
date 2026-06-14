@@ -1,6 +1,9 @@
 {
   "name": "open-ai",
   "description": "OpenAI -- list models and send responses",
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
   "files": [
     { "src": "service.ts", "dest": "src/services/open-ai.ts" },
     { "src": "types.ts", "dest": "src/types/open-ai.ts" },
@@ -10,12 +13,10 @@
   "example": "example.ts",
   "transforms": {
     "service.ts": [
-      { "from": "./types.js", "to": "../types/open-ai.js" },
-      { "from": "../../init/src/lib/http.js", "to": "../lib/http.js" }
+      { "from": "./types.js", "to": "../types/open-ai.js" }
     ],
     "service.test.ts": [
-      { "from": "./service.js", "to": "./open-ai.js" },
-      { "from": "../../init/src/lib/http.js", "to": "../lib/http.js" }
+      { "from": "./service.js", "to": "./open-ai.js" }
     ]
   },
   "patches": {
@@ -29,8 +30,7 @@
       "services": "        openAi: createOpenAIService(this.openAiConfig),"
     },
     "src/types/suite.ts": {
-      "type-imports": "import type { OpenAiConfig, OpenAiListModels, OpenAiResponse } from \"./open-ai.js\";",
-      "service-types": "    openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>; };"
+      "service-types": "    openAi: { listModels(): Promise<unknown>; response(model: string, format: string, message: string): Promise<unknown>; };"
     }
   }
 }

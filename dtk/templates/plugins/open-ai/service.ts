@@ -1,26 +1,21 @@
-import type { OpenAiConfig, OpenAiListModels, OpenAiResponse, OpenAiResponseBody, OpenAiResponseFormat } from "./types.js";
-import { httpGet, httpPost } from "../../init/src/lib/http.js";
+import OpenAI from "openai";
+import type { OpenAiConfig, OpenAiResponseFormat } from "./types.js";
 
 export function createOpenAIService(config?: OpenAiConfig) {
-  const ensureConfig = () => {
-    if (!config) throw new Error("openAi service is not configured -- call .openAi(config) on the suite");
+  const client = config ? new OpenAI({ apiKey: config.apiKey }) : null;
+
+  const ensureClient = (): OpenAI => {
+    if (!client) throw new Error("openAi service is not configured -- call .openAi(config) on the suite");
+    return client;
   };
 
   return {
-    listModels: async (bearerToken: string): Promise<OpenAiListModels> => {
-      ensureConfig();
-      const headers: Record<string, string> = { Authorization: bearerToken };
-      return httpGet<OpenAiListModels>(`${config!.baseUrl}/v1/models`, { headers });
-    },
-    response: async (bearerToken: string, model: string, format: OpenAiResponseFormat, message: string): Promise<OpenAiResponse> => {
-      ensureConfig();
-      const headers: Record<string, string> = { Authorization: bearerToken };
-      const body: OpenAiResponseBody = {
+    listModels: async () => ensureClient().models.list(),
+    response: async (model: string, format: OpenAiResponseFormat, message: string) =>
+      ensureClient().responses.create({
         model,
         input: message,
         text: { format: { type: format } },
-      };
-      return httpPost<OpenAiResponseBody, OpenAiResponse>(`${config!.baseUrl}/v1/responses`, body, { headers });
-    },
+      }),
   };
 }

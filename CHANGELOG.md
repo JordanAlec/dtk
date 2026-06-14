@@ -6,6 +6,227 @@ Since dtk generates files that you own, there is no automatic upgrade path. Each
 
 ---
 
+## [1.4.0] - 2026-06-15
+
+### Changed
+
+- **open-ai plugin**: replaced the internal `httpGet`/`httpPost` HTTP wrapper with the official `openai` npm SDK. Auth header construction, URL building, and request/response types are now handled by the SDK.
+
+#### Breaking changes
+
+- `OpenAiConfig` now requires `apiKey: string` instead of `baseUrl: string`
+- `listModels` no longer accepts a `bearerToken` argument
+- `response` no longer accepts a `bearerToken` argument -- signature is now `(model, format, message)`
+
+#### Upgrading the open-ai plugin
+
+There is no automated upgrade. Make the following changes to your generated project in order.
+
+---
+
+**1. `package.json` -- add `openai` to the `dependencies` section (not `devDependencies`), then run `npm install`**
+
+```json
+"dependencies": {
+  "openai": "^4.0.0"
+}
+```
+
+---
+
+**2. `src/types/open-ai.ts` -- replace the entire file**
+
+```ts
+export interface OpenAiConfig {
+  apiKey: string;
+}
+
+export type OpenAiResponseFormat = "text" | "json_object";
+```
+
+---
+
+**3. `src/services/open-ai.ts` -- replace the entire file**
+
+```ts
+import OpenAI from "openai";
+import type { OpenAiConfig, OpenAiResponseFormat } from "../types/open-ai.js";
+
+export function createOpenAIService(config?: OpenAiConfig) {
+  const client = config ? new OpenAI({ apiKey: config.apiKey }) : null;
+
+  const ensureClient = (): OpenAI => {
+    if (!client) throw new Error("openAi service is not configured -- call .openAi(config) on the suite");
+    return client;
+  };
+
+  return {
+    listModels: async () => ensureClient().models.list(),
+    response: async (model: string, format: OpenAiResponseFormat, message: string) =>
+      ensureClient().responses.create({
+        model,
+        input: message,
+        text: { format: { type: format } },
+      }),
+  };
+}
+```
+
+---
+
+**4. `src/services/open-ai.test.ts` -- replace the entire file**
+
+```ts
+import { createOpenAIService } from './open-ai.js';
+import OpenAI from 'openai';
+
+jest.mock('openai');
+
+const MockOpenAI = jest.mocked(OpenAI);
+
+describe('createOpenAIService', () => {
+  const config = { apiKey: 'sk-test-token' };
+  let mockList: jest.Mock;
+  let mockCreate: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockList = jest.fn();
+    mockCreate = jest.fn();
+    MockOpenAI.mockImplementation(() => ({
+      models: { list: mockList },
+      responses: { create: mockCreate },
+    }) as unknown as OpenAI);
+  });
+
+  describe('listModels', () => {
+    it('calls models.list', async () => {
+      mockList.mockResolvedValue({ data: [] });
+      const openAi = createOpenAIService(config);
+      await openAi.listModels();
+      expect(mockList).toHaveBeenCalled();
+    });
+  });
+
+  describe('response', () => {
+    it('calls responses.create with correct args', async () => {
+      mockCreate.mockResolvedValue({ id: 'resp-1' });
+      const openAi = createOpenAIService(config);
+      await openAi.response('gpt-4o-mini', 'text', 'Say hello.');
+      expect(mockCreate).toHaveBeenCalledWith({
+        model: 'gpt-4o-mini',
+        input: 'Say hello.',
+        text: { format: { type: 'text' } },
+      });
+    });
+
+    it('passes format in request body', async () => {
+      mockCreate.mockResolvedValue({ id: 'resp-1' });
+      const openAi = createOpenAIService(config);
+      await openAi.response('gpt-4o-mini', 'json_object', 'Return JSON.');
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ text: { format: { type: 'json_object' } } })
+      );
+    });
+  });
+});
+```
+
+---
+
+**5. `src/types/suite.ts` -- two line changes**
+
+Update the `open-ai` type import on the line that reads:
+
+```ts
+import type { OpenAiConfig, OpenAiListModels, OpenAiResponse } from "./open-ai.js";
+```
+
+Remove `OpenAiListModels` and `OpenAiResponse`:
+
+```ts
+import type { OpenAiConfig } from "./open-ai.js";
+```
+
+Update the `openAi` entry in the `services` block that reads:
+
+```ts
+openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(bearerToken: string, model: string, format: string, message: string): Promise<OpenAiResponse>; };
+```
+
+Replace with:
+
+```ts
+openAi: { listModels(): Promise<unknown>; response(model: string, format: string, message: string): Promise<unknown>; };
+```
+
+---
+
+**6. `src/runbooks/open-ai.ts` -- apply the following changes to each open-ai runbook**
+
+If you have not customised the generated runbook you can replace the file outright using the content at the end of this section. If you have customised it, apply these three targeted changes instead.
+
+**Change the config passed to `.openAi()`:**
+
+```ts
+// Before
+.openAi({ baseUrl: "https://api.openai.com" })
+
+// After
+.openAi({ apiKey: process.env.OPENAI_API_KEY! })
+```
+
+**Remove bearer token construction and pass arguments directly to `listModels` and `response`:**
+
+```ts
+// Before
+const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
+const result = await ctx.services.openAi.listModels(token);
+
+// After
+const result = await ctx.services.openAi.listModels();
+```
+
+```ts
+// Before
+const token = `Bearer ${process.env.OPENAI_API_KEY!}`;
+const result = await ctx.services.openAi.response(token, "gpt-4o-mini", "text", "Say hello in one sentence.");
+
+// After
+const result = await ctx.services.openAi.response("gpt-4o-mini", "text", "Say hello in one sentence.");
+```
+
+If you have not customised the generated runbook, you can replace the entire file with:
+
+```ts
+import "../load-env.js";
+import { suite } from "../suite.js";
+
+await suite()
+  .openAi({
+    apiKey: process.env.OPENAI_API_KEY!,
+  })
+  .step("list-models", async (ctx) => {
+    const result = await ctx.services.openAi.listModels();
+    console.log(`Available models (${result.data.length}):`);
+    result.data.slice(0, 5).forEach((m) => console.log(" -", m.id));
+    return result;
+  })
+  .step("send-response", async (ctx) => {
+    const result = await ctx.services.openAi.response(
+      "gpt-4o-mini",
+      "text",
+      "Say hello in one sentence."
+    );
+    const text = result.output[0]?.content[0]?.text;
+    console.log("response:", text);
+    return result;
+  })
+  .run("throwOnError");
+```
+
+---
+
 ## [1.3.1] - 2026-06-14
 
 ### Security
