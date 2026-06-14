@@ -36,6 +36,19 @@ SQL_CONNECTION_STRING=postgresql://dtk:dtk@localhost:5432/dtk
 
 Credentials: user `dtk`, password `dtk`, database `dtk`.
 
+On first start, the init scripts in `postgres/init/` run automatically and create:
+
+- `users` table with sample active and inactive rows (including a user at id=42 for the stored procedure demo)
+- `accounts` table with two seeded rows (ids 1 and 2) for the transaction step
+- `usp_activate_user` stored procedure
+
+These scripts only run against a fresh data volume. To reset and re-run them:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
 
 ### AWS (`aws/`)
 
