@@ -17,7 +17,9 @@ await suite()
       "text",
       "Say hello in one sentence."
     );
-    const text = result.output[0]?.content[0]?.text;
+    const firstOutput = result.output[0];
+    const firstContent = firstOutput?.type === 'message' ? firstOutput.content[0] : undefined;
+    const text = firstContent?.type === 'output_text' ? firstContent.text : undefined;
     console.log("response:", text);
     return result;
   })

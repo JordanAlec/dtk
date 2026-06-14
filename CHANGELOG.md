@@ -134,7 +134,7 @@ describe('createOpenAIService', () => {
 
 ---
 
-**5. `src/types/suite.ts` -- two line changes**
+**5. `src/types/suite.ts` -- three changes**
 
 Update the `open-ai` type import on the line that reads:
 
@@ -142,10 +142,12 @@ Update the `open-ai` type import on the line that reads:
 import type { OpenAiConfig, OpenAiListModels, OpenAiResponse } from "./open-ai.js";
 ```
 
-Remove `OpenAiListModels` and `OpenAiResponse`:
+Remove `OpenAiListModels` and `OpenAiResponse`, and add SDK type imports directly below it:
 
 ```ts
 import type { OpenAiConfig } from "./open-ai.js";
+import type { Model } from "openai";
+import type { Response as OpenAiApiResponse } from "openai/resources/responses/responses";
 ```
 
 Update the `openAi` entry in the `services` block that reads:
@@ -157,7 +159,7 @@ openAi: { listModels(bearerToken: string): Promise<OpenAiListModels>; response(b
 Replace with:
 
 ```ts
-openAi: { listModels(): Promise<unknown>; response(model: string, format: string, message: string): Promise<unknown>; };
+openAi: { listModels(): Promise<{ data: Model[] }>; response(model: string, format: string, message: string): Promise<OpenAiApiResponse>; };
 ```
 
 ---
@@ -218,7 +220,9 @@ await suite()
       "text",
       "Say hello in one sentence."
     );
-    const text = result.output[0]?.content[0]?.text;
+    const firstOutput = result.output[0];
+    const firstContent = firstOutput?.type === 'message' ? firstOutput.content[0] : undefined;
+    const text = firstContent?.type === 'output_text' ? firstContent.text : undefined;
     console.log("response:", text);
     return result;
   })

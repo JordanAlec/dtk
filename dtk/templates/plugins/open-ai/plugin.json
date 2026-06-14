@@ -30,7 +30,8 @@
       "services": "        openAi: createOpenAIService(this.openAiConfig),"
     },
     "src/types/suite.ts": {
-      "service-types": "    openAi: { listModels(): Promise<unknown>; response(model: string, format: string, message: string): Promise<unknown>; };"
+      "type-imports": "import type { Model } from \"openai\";\nimport type { Response as OpenAiApiResponse } from \"openai/resources/responses/responses\";",
+      "service-types": "    openAi: { listModels(): Promise<{ data: Model[] }>; response(model: string, format: string, message: string): Promise<OpenAiApiResponse>; };"
     }
   }
 }
