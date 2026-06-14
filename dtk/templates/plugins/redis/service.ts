@@ -41,7 +41,7 @@ export function createRedisService(config?: RedisConfig) {
     },
     expire: async (key: string, ttlSeconds: number): Promise<boolean> => {
       const c = await getClient();
-      return c.expire(key, ttlSeconds);
+      return Boolean(await c.expire(key, ttlSeconds));
     },
     hset: async (key: string, field: string, value: string): Promise<number> => {
       const c = await getClient();
