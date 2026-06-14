@@ -2,7 +2,7 @@
   "name": "open-ai",
   "description": "OpenAI -- list models and send responses",
   "dependencies": {
-    "openai": "^4.0.0"
+    "openai": "^6.0.0"
   },
   "files": [
     { "src": "service.ts", "dest": "src/services/open-ai.ts" },

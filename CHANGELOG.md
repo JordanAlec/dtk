@@ -28,7 +28,7 @@ There is no automated upgrade. Make the following changes to your generated proj
 
 ```json
 "dependencies": {
-  "openai": "^4.0.0"
+  "openai": "^6.0.0"
 }
 ```
 
