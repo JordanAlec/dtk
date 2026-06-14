@@ -9,7 +9,7 @@ await suite()
     const result = await ctx.services.s3.uploadFile(
       process.env.S3_BUCKET_NAME!,
       "uploads/example.txt",
-      "./example.txt",
+      "../tools/aws/s3-test-file.txt",
       {
         contentType: "text/plain",
         metadata: { source: "dtk-example" },
@@ -32,7 +32,7 @@ await suite()
     const result = await ctx.services.s3.downloadFile(
       process.env.S3_BUCKET_NAME!,
       "uploads/example.txt",
-      "./downloaded-example.txt"
+      "../tools/aws/s3-test-file-downloaded.txt"
     );
     console.log("Downloaded to:", result.localPath);
     console.log("Content type:", result.contentType);
