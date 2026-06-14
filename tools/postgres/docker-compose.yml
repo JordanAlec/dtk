@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     container_name: dtk-postgres
     ports:
       - "5432:5432"
@@ -10,6 +10,7 @@ services:
       POSTGRES_PASSWORD: dtk
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
 
 volumes:
   postgres_data:
