@@ -2,3 +2,4 @@ node_modules/
 dist/
 .env
 .env.local
+s3-test-file-downloaded.txt
