@@ -36,6 +36,14 @@ SQL_CONNECTION_STRING=postgresql://dtk:dtk@localhost:5432/dtk
 
 Credentials: user `dtk`, password `dtk`, database `dtk`.
 
+
+### AWS (`aws/`)
+
+No docker files. These include helper files to demo and test the runbooks.
+
+- s3-test-file.txt: test file for running the aws-s3 example runbook
+- s3-test-file-downloaded.txt: test file that may appear after running the aws-s3 example runbook as it contains a download step (it is gitignored and essentially a copy of the file above if that was used in the upload)
+
 ## Stopping services
 
 ```bash
