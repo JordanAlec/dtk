@@ -1,55 +1,53 @@
 import { createOpenAIService } from './open-ai.js';
+import OpenAI from 'openai';
 
-jest.mock('../lib/http.js');
-import { httpGet, httpPost } from '../lib/http.js';
+jest.mock('openai');
 
-const mockHttpGet = jest.mocked(httpGet);
-const mockHttpPost = jest.mocked(httpPost);
-
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+const MockOpenAI = jest.mocked(OpenAI);
 
 describe('createOpenAIService', () => {
-  const config = { baseUrl: 'https://api.openai.com' };
-  const bearerToken = 'Bearer sk-test-token';
+  const config = { apiKey: 'sk-test-token' };
+  let mockList: jest.Mock;
+  let mockCreate: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockList = jest.fn();
+    mockCreate = jest.fn();
+    MockOpenAI.mockImplementation(() => ({
+      models: { list: mockList },
+      responses: { create: mockCreate },
+    }) as unknown as OpenAI);
+  });
 
   describe('listModels', () => {
-    it('calls the correct models endpoint with the bearer token', async () => {
-      mockHttpGet.mockResolvedValue({ object: 'list', data: [] });
+    it('calls models.list', async () => {
+      mockList.mockResolvedValue({ data: [] });
       const openAi = createOpenAIService(config);
-      await openAi.listModels(bearerToken);
-      expect(mockHttpGet).toHaveBeenCalledWith(
-        'https://api.openai.com/v1/models',
-        { headers: { Authorization: bearerToken } }
-      );
+      await openAi.listModels();
+      expect(mockList).toHaveBeenCalled();
     });
-
   });
 
   describe('response', () => {
-    it('calls the correct responses endpoint', async () => {
-      mockHttpPost.mockResolvedValue({ id: 'resp-1' });
+    it('calls responses.create with correct args', async () => {
+      mockCreate.mockResolvedValue({ id: 'resp-1' });
       const openAi = createOpenAIService(config);
-      await openAi.response(bearerToken, 'gpt-4o-mini', 'text', 'Say hello.');
-      expect(mockHttpPost).toHaveBeenCalledWith(
-        'https://api.openai.com/v1/responses',
-        expect.any(Object),
-        { headers: { Authorization: bearerToken } }
-      );
-    });
-
-    it('sends the correct request body', async () => {
-      mockHttpPost.mockResolvedValue({ id: 'resp-1' });
-      const openAi = createOpenAIService(config);
-      await openAi.response(bearerToken, 'gpt-4o-mini', 'json_object', 'Return JSON.');
-      const body = mockHttpPost.mock.calls[0][1];
-      expect(body).toMatchObject({
+      await openAi.response('gpt-4o-mini', 'text', 'Say hello.');
+      expect(mockCreate).toHaveBeenCalledWith({
         model: 'gpt-4o-mini',
-        input: 'Return JSON.',
-        text: { format: { type: 'json_object' } },
+        input: 'Say hello.',
+        text: { format: { type: 'text' } },
       });
     });
 
+    it('passes format in request body', async () => {
+      mockCreate.mockResolvedValue({ id: 'resp-1' });
+      const openAi = createOpenAIService(config);
+      await openAi.response('gpt-4o-mini', 'json_object', 'Return JSON.');
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ text: { format: { type: 'json_object' } } })
+      );
+    });
   });
 });
