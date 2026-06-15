@@ -11,7 +11,8 @@
     "runbook:aws-s3": "tsx src/runbooks/aws-s3.ts",
     "runbook:open-ai": "tsx src/runbooks/open-ai.ts",
     "runbook:redis": "tsx src/runbooks/redis.ts",
-    "runbook:sql": "tsx src/runbooks/sql.ts"
+    "runbook:sql": "tsx src/runbooks/sql.ts",
+    "runbook:mongodb": "tsx src/runbooks/mongodb.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1068.0",
@@ -23,10 +24,11 @@
     "axios": "^1.17.0",
     "dotenv": "^17.0.0",
     "knex": "^3.2.10",
+    "mongodb": "^6.17.0",
     "mssql": "^12.5.5",
     "mysql2": "^3.22.5",
-    "pg": "^8.21.0",
     "openai": "^6.0.0",
+    "pg": "^8.21.0",
     "redis": "^6.0.0"
   },
   "devDependencies": {
