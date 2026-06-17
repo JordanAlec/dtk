@@ -16,6 +16,7 @@ const PLUGIN_MAP: Record<string, string> = {
   'open-ai': 'open-ai',
   'redis': 'redis',
   'sql': 'sql',
+  'kafka': 'kafka',
 };
 
 interface PluginTransform {

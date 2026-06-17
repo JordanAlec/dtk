@@ -531,6 +531,71 @@ Supported clients: `pg` (PostgreSQL), `mysql2` (MySQL / MariaDB), `mssql` (SQL S
 
 ---
 
+### kafka
+
+```bash
+dtk add kafka
+```
+
+Requires env vars:
+
+```
+KAFKA_BROKERS=localhost:19092
+KAFKA_CLIENT_ID=dtk-client
+```
+
+For local dev, start Redpanda from `tools/kafka/`:
+
+```bash
+cd tools/kafka && docker compose up -d
+```
+
+Example usage:
+
+```ts
+await suite()
+  .kafka({
+    brokers: process.env.KAFKA_BROKERS!.split(",").map((b) => b.trim()),
+    clientId: process.env.KAFKA_CLIENT_ID ?? "dtk-client",
+  })
+  .step("produce-message", async (ctx) => {
+    await ctx.services.kafka.produce({
+      topic: "example-topic",
+      messages: [{ value: "hello from dtk" }],
+    });
+  })
+  .step("consume-message", async (ctx) => {
+    await ctx.services.kafka.consume({
+      topic: "example-topic",
+      groupId: "dtk-group",
+      fromBeginning: true,
+      handler: async ({ message }) => {
+        console.log(message.value?.toString());
+      },
+    });
+  })
+  .step("disconnect", async (ctx) => {
+    await ctx.services.kafka.disconnect();
+  })
+  .run("stopOnError");
+```
+
+Available methods on `ctx.services.kafka`:
+
+| Method | Description |
+|---|---|
+| `produce({ topic, messages })` | Sends messages to a topic. Connects the producer on first call and reuses it. |
+| `consume({ topic, groupId, fromBeginning?, handler })` | Subscribes and runs the consumer. Calling this a second time without first calling `disconnect()` throws. |
+| `disconnect()` | Disconnects producer and consumer and resets state. Safe to call even if neither was connected. |
+
+Run the example runbook:
+
+```bash
+npm run runbook:kafka
+```
+
+---
+
 ## Writing a custom service
 
 If there is no plugin for the service you need, wire one in manually. Four files are involved.
