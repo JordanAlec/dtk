@@ -50,6 +50,37 @@ docker compose up -d
 ```
 
 
+### MongoDB (`mongodb/`)
+
+Runs a MongoDB 6.0 (LTS) instance on the default port `27017`.
+
+```bash
+cd tools/mongodb
+docker compose up -d
+```
+
+Set the following in your project's `.env`:
+
+```
+MONGODB_URI=mongodb://dtk:dtk@localhost:27017/dtk?authSource=admin
+MONGODB_DATABASE=dtk
+```
+
+Credentials: user `dtk`, password `dtk`, database `dtk`.
+
+On first start, the init script in `mongodb/init/` runs automatically and seeds:
+
+- `users` collection with three sample documents
+- `accounts` collection with two seeded documents
+
+These scripts only run against a fresh data volume. To reset and re-run them:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+
 ### Kafka (`kafka/`)
 
 Runs [Redpanda](https://redpanda.com/) — a Kafka-API-compatible broker — on port `19092`, plus Redpanda Console (UI) on port `8080`.

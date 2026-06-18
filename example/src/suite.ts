@@ -18,6 +18,8 @@ import { createRedisService } from "./services/redis.js";
 import type { RedisConfig } from "./types/redis.js";
 import { createSqlService } from "./services/sql.js";
 import type { SqlConfig } from "./types/sql.js";
+import { createMongoService } from "./services/mongodb.js";
+import type { MongoConfig } from "./types/mongodb.js";
 import { createKafkaService } from "./services/kafka.js";
 import type { KafkaConfig } from "./types/kafka.js";
 // dtk:imports
@@ -38,6 +40,7 @@ class Suite {
   private openAiConfig?: OpenAiConfig;
   private redisConfig?: RedisConfig;
   private sqlConfig?: SqlConfig;
+  private mongodbConfig?: MongoConfig;
   private kafkaConfig?: KafkaConfig;
 // dtk:configs
 
@@ -51,6 +54,7 @@ class Suite {
   openAi(config: OpenAiConfig): this { this.openAiConfig = config; return this; }
   redis(config: RedisConfig): this { this.redisConfig = config; return this; }
   sql(config: SqlConfig): this { this.sqlConfig = config; return this; }
+  mongodb(config: MongoConfig): this { this.mongodbConfig = config; return this; }
   kafka(config: KafkaConfig): this { this.kafkaConfig = config; return this; }
 // dtk:methods
 
@@ -96,6 +100,7 @@ class Suite {
         openAi: createOpenAIService(this.openAiConfig),
         redis: createRedisService(this.redisConfig),
         sql: createSqlService(this.sqlConfig),
+        mongodb: createMongoService(this.mongodbConfig),
         kafka: createKafkaService(this.kafkaConfig),
 // dtk:services
       },

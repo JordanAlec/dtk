@@ -12,7 +12,8 @@
     "runbook:open-ai": "tsx src/runbooks/open-ai.ts",
     "runbook:redis": "tsx src/runbooks/redis.ts",
     "runbook:sql": "tsx src/runbooks/sql.ts",
-    "runbook:kafka": "tsx src/runbooks/kafka.ts"
+    "runbook:kafka": "tsx src/runbooks/kafka.ts",
+    "runbook:mongodb": "tsx src/runbooks/mongodb.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1068.0",

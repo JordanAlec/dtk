@@ -8,6 +8,7 @@ import type { OpenAiConfig } from "./open-ai.js";
 import type { Model } from "openai";
 import type { Response as OpenAiApiResponse } from "openai/resources/responses/responses";
 import type { SqlOps } from "./sql.js";
+import type { MongoDocument, MongoFilter, MongoUpdate } from "./mongodb.js";
 import type { KafkaConsumeOptions } from "./kafka.js";
 // dtk:type-imports
 
@@ -52,6 +53,7 @@ export interface StepContext {
     openAi: { listModels(): Promise<{ data: Model[] }>; response(model: string, format: string, message: string): Promise<OpenAiApiResponse>; };
     redis: { get(key: string): Promise<string | null>; set(key: string, value: string, ttlSeconds?: number): Promise<void>; del(key: string): Promise<number>; exists(key: string): Promise<boolean>; expire(key: string, ttlSeconds: number): Promise<boolean>; hset(key: string, field: string, value: string): Promise<number>; hget(key: string, field: string): Promise<string | null>; keys(pattern: string): Promise<string[]>; quit(): Promise<void>; };
     sql: { query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]>; execute(sql: string, params?: unknown[]): Promise<number>; callProc<T = Record<string, unknown>>(name: string, params?: unknown[]): Promise<T[]>; transaction<T>(fn: (ops: SqlOps) => Promise<T>): Promise<T>; disconnect(): Promise<void>; };
+    mongodb: { insertOne(collection: string, doc: MongoDocument): Promise<{ insertedId: string }>; insertMany(collection: string, docs: MongoDocument[]): Promise<{ insertedCount: number; insertedIds: string[] }>; findOne<T = MongoDocument>(collection: string, filter: MongoFilter): Promise<T | null>; find<T = MongoDocument>(collection: string, filter?: MongoFilter): Promise<T[]>; updateOne(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }>; updateMany(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }>; deleteOne(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }>; deleteMany(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }>; disconnect(): Promise<void>; };
     kafka: { produce(options: { topic: string; messages: import('kafkajs').Message[] }): Promise<void>; consume(options: KafkaConsumeOptions): Promise<void>; disconnect(): Promise<void>; };
 // dtk:service-types
   };
