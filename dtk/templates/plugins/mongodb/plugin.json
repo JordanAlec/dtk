@@ -1,0 +1,37 @@
+{
+  "name": "mongodb",
+  "description": "MongoDB -- insertOne, insertMany, findOne, find, updateOne, updateMany, deleteOne, deleteMany",
+  "dependencies": {
+    "mongodb": "^6.17.0"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/mongodb.ts" },
+    { "src": "types.ts", "dest": "src/types/mongodb.ts" },
+    { "src": "service.test.ts", "dest": "src/services/mongodb.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/mongodb.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./mongodb.js" }
+    ]
+  },
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createMongoService } from \"./services/mongodb.js\";",
+        "import type { MongoConfig } from \"./types/mongodb.js\";"
+      ],
+      "configs": "  private mongodbConfig?: MongoConfig;",
+      "methods": "  mongodb(config: MongoConfig): this { this.mongodbConfig = config; return this; }",
+      "services": "        mongodb: createMongoService(this.mongodbConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { MongoDocument, MongoFilter, MongoUpdate } from \"./mongodb.js\";",
+      "service-types": "    mongodb: { insertOne(collection: string, doc: MongoDocument): Promise<{ insertedId: string }>; insertMany(collection: string, docs: MongoDocument[]): Promise<{ insertedCount: number; insertedIds: string[] }>; findOne<T = MongoDocument>(collection: string, filter: MongoFilter): Promise<T | null>; find<T = MongoDocument>(collection: string, filter?: MongoFilter): Promise<T[]>; updateOne(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }>; updateMany(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }>; deleteOne(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }>; deleteMany(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }>; disconnect(): Promise<void>; };"
+    }
+  }
+}

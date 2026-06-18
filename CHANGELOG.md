@@ -6,6 +6,304 @@ Since dtk generates files that you own, there is no automatic upgrade path. Each
 
 ---
 
+## [1.5.0] - 2026-06-16
+
+### Added
+
+- **mongodb plugin**: new plugin for reading and writing documents using the native MongoDB Node.js driver (`mongodb` npm package). No query builder or ORM -- direct driver calls that mirror the shape of the driver API while returning clean, serialisable result objects.
+
+#### Available methods
+
+| Method | Description |
+|---|---|
+| `insertOne(collection, doc)` | Inserts a single document; returns `{ insertedId: string }` |
+| `insertMany(collection, docs)` | Inserts multiple documents; returns `{ insertedCount: number; insertedIds: string[] }` |
+| `findOne<T>(collection, filter)` | Returns the first matching document as `T`, or `null` if nothing matches |
+| `find<T>(collection, filter?)` | Returns all matching documents as `T[]`; omit the filter to return all documents in the collection |
+| `updateOne(collection, filter, update)` | Updates the first matching document; returns `{ matchedCount: number; modifiedCount: number }` |
+| `updateMany(collection, filter, update)` | Updates all matching documents; returns `{ matchedCount: number; modifiedCount: number }` |
+| `deleteOne(collection, filter)` | Deletes the first matching document; returns `{ deletedCount: number }` |
+| `deleteMany(collection, filter)` | Deletes all matching documents; returns `{ deletedCount: number }` |
+| `disconnect()` | Closes the connection pool -- must always be called in a `finally` block |
+
+The service connects lazily on the first call and reuses the connection for all subsequent calls. `disconnect()` closes the pool and resets the client so the next call reconnects cleanly.
+
+#### Connection pattern
+
+MongoDB holds an open connection pool. Unlike plugins that are wired through the suite builder, the service should be created outside the suite so `disconnect()` can be guaranteed in a `finally` block regardless of whether a step fails:
+
+```ts
+import "../load-env.js";
+import { suite } from "../suite.js";
+import { createMongoService } from "../services/mongodb.js";
+
+const mongo = createMongoService({
+  uri: process.env.MONGODB_URI!,
+  database: process.env.MONGODB_DATABASE ?? 'dtk',
+});
+
+try {
+  await suite()
+    .step("insert", async () => {
+      const result = await mongo.insertOne("users", { name: "Alice", active: true });
+      console.log("inserted id:", result.insertedId);
+      return result;
+    })
+    .step("find-active", async () => {
+      const users = await mongo.find<{ name: string; active: boolean }>("users", { active: true });
+      console.log("active users:", users);
+      return users;
+    })
+    .step("update", async () => {
+      return mongo.updateOne("users", { name: "Alice" }, { $set: { active: false } });
+    })
+    .step("delete-inactive", async () => {
+      return mongo.deleteMany("users", { active: false });
+    })
+    .run("stopOnError");
+} finally {
+  await mongo.disconnect();
+}
+```
+
+> Always use `stopOnError` rather than `throwOnError` so that every step runs before the `finally` block executes. With `throwOnError`, an early step failure throws immediately and the remaining steps do not run -- but `finally` still runs, so `disconnect()` is still safe either way.
+
+#### Local Docker service
+
+A Docker Compose file is provided at `tools/mongodb/` for local development:
+
+```bash
+cd tools/mongodb
+docker compose up -d
+```
+
+Set the following in your project's `.env`:
+
+```
+MONGODB_URI=mongodb://dtk:dtk@localhost:27017/dtk?authSource=admin
+MONGODB_DATABASE=dtk
+```
+
+Credentials: user `dtk`, password `dtk`, database `dtk`. The auth source is `admin` because the root user is created in the `admin` database by the official MongoDB image.
+
+On first start, `tools/mongodb/init/seed.js` runs automatically and creates:
+
+- `users` collection with three sample documents
+- `accounts` collection with two seeded documents
+
+To reset and re-seed:
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+---
+
+### Adopting the mongodb plugin
+
+#### New to mongodb in your project
+
+If you have never set up a mongodb integration manually, this is a single command:
+
+```bash
+dtk add mongodb
+```
+
+This will:
+
+1. Copy `src/services/mongodb.ts` into your project
+2. Copy `src/types/mongodb.ts` into your project
+3. Copy `src/services/mongodb.test.ts` into your project
+4. Patch `src/suite.ts` to add the import, config field, and builder method (all idempotent -- safe to run again if already partially applied)
+5. Patch `src/types/suite.ts` to add the `mongodb` service shape to `StepContext`
+6. Append `MONGODB_URI` and `MONGODB_DATABASE` to `.env.template`
+7. Create `src/runbooks/mongodb.ts` with a working example
+8. Add `runbook:mongodb` to `package.json`
+9. Run `npm install mongodb`
+
+That is everything. No further manual steps are required.
+
+---
+
+#### Already have a manual mongodb integration
+
+If you previously wired up your own mongodb service by hand, `dtk add mongodb` will still run safely but may not overwrite what you have (files are not overwritten if they already exist). Use the file contents below to bring your project in line with the standard plugin layout, picking up whichever pieces you are missing.
+
+---
+
+**1. `src/types/mongodb.ts` -- create or replace**
+
+```ts
+export interface MongoConfig {
+  uri: string;
+  database: string;
+}
+
+export type MongoDocument = Record<string, unknown>;
+export type MongoFilter = Record<string, unknown>;
+export type MongoUpdate = Record<string, unknown>;
+```
+
+---
+
+**2. `src/services/mongodb.ts` -- create or replace**
+
+```ts
+import { MongoClient } from 'mongodb';
+import type { MongoConfig, MongoDocument, MongoFilter, MongoUpdate } from '../types/mongodb.js';
+
+export function createMongoService(config?: MongoConfig) {
+  const ensureConfig = () => {
+    if (!config) throw new Error("mongodb service is not configured -- call .mongodb(config) on the suite");
+  };
+
+  let client: MongoClient | null = null;
+
+  const getClient = async (): Promise<MongoClient> => {
+    ensureConfig();
+    if (!client) {
+      client = new MongoClient(config!.uri);
+      await client.connect();
+    }
+    return client;
+  };
+
+  const getCollection = async (collection: string) => {
+    const c = await getClient();
+    return c.db(config!.database).collection(collection);
+  };
+
+  return {
+    async insertOne(collection: string, doc: MongoDocument): Promise<{ insertedId: string }> {
+      const col = await getCollection(collection);
+      const result = await col.insertOne(doc);
+      return { insertedId: result.insertedId.toString() };
+    },
+
+    async insertMany(collection: string, docs: MongoDocument[]): Promise<{ insertedCount: number; insertedIds: string[] }> {
+      const col = await getCollection(collection);
+      const result = await col.insertMany(docs);
+      return {
+        insertedCount: result.insertedCount,
+        insertedIds: Object.values(result.insertedIds).map(id => id.toString()),
+      };
+    },
+
+    async findOne<T = MongoDocument>(collection: string, filter: MongoFilter): Promise<T | null> {
+      const col = await getCollection(collection);
+      return col.findOne(filter) as Promise<T | null>;
+    },
+
+    async find<T = MongoDocument>(collection: string, filter: MongoFilter = {}): Promise<T[]> {
+      const col = await getCollection(collection);
+      return col.find(filter).toArray() as unknown as Promise<T[]>;
+    },
+
+    async updateOne(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }> {
+      const col = await getCollection(collection);
+      const result = await col.updateOne(filter, update);
+      return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+    },
+
+    async updateMany(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }> {
+      const col = await getCollection(collection);
+      const result = await col.updateMany(filter, update);
+      return { matchedCount: result.matchedCount, modifiedCount: result.modifiedCount };
+    },
+
+    async deleteOne(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }> {
+      const col = await getCollection(collection);
+      const result = await col.deleteOne(filter);
+      return { deletedCount: result.deletedCount };
+    },
+
+    async deleteMany(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }> {
+      const col = await getCollection(collection);
+      const result = await col.deleteMany(filter);
+      return { deletedCount: result.deletedCount };
+    },
+
+    async disconnect(): Promise<void> {
+      if (client) {
+        await client.close();
+        client = null;
+      }
+    },
+  };
+}
+```
+
+---
+
+**3. `src/suite.ts` -- four additions**
+
+Add two imports near the top of the file (before `// dtk:imports`):
+
+```ts
+import { createMongoService } from "./services/mongodb.js";
+import type { MongoConfig } from "./types/mongodb.js";
+```
+
+Add a private field inside the `Suite` class (before `// dtk:configs`):
+
+```ts
+private mongodbConfig?: MongoConfig;
+```
+
+Add a builder method (before `// dtk:methods`):
+
+```ts
+mongodb(config: MongoConfig): this { this.mongodbConfig = config; return this; }
+```
+
+Add the service instance in `buildContext` inside the `services` block (before `// dtk:services`):
+
+```ts
+mongodb: createMongoService(this.mongodbConfig),
+```
+
+---
+
+**4. `src/types/suite.ts` -- two additions**
+
+Add a type import (before `// dtk:type-imports`):
+
+```ts
+import type { MongoDocument, MongoFilter, MongoUpdate } from "./mongodb.js";
+```
+
+Add the service shape to the `services` block inside `StepContext` (before `// dtk:service-types`):
+
+```ts
+mongodb: { insertOne(collection: string, doc: MongoDocument): Promise<{ insertedId: string }>; insertMany(collection: string, docs: MongoDocument[]): Promise<{ insertedCount: number; insertedIds: string[] }>; findOne<T = MongoDocument>(collection: string, filter: MongoFilter): Promise<T | null>; find<T = MongoDocument>(collection: string, filter?: MongoFilter): Promise<T[]>; updateOne(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }>; updateMany(collection: string, filter: MongoFilter, update: MongoUpdate): Promise<{ matchedCount: number; modifiedCount: number }>; deleteOne(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }>; deleteMany(collection: string, filter: MongoFilter): Promise<{ deletedCount: number }>; disconnect(): Promise<void>; };
+```
+
+---
+
+**5. `.env.template` -- append**
+
+```
+MONGODB_URI=
+MONGODB_DATABASE=
+```
+
+---
+
+**6. `package.json` -- add dependency and run `npm install`**
+
+```json
+"dependencies": {
+  "mongodb": "^6.17.0"
+}
+```
+
+```bash
+npm install
+```
+
+---
+
 ## [1.4.0] - 2026-06-15
 
 ### Changed

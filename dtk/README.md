@@ -437,6 +437,81 @@ Supported clients: `pg` (PostgreSQL), `mysql2` (MySQL / MariaDB), `mssql` (SQL S
 
 ---
 
+### mongodb
+
+Reads and writes documents in a MongoDB collection using the native MongoDB Node.js driver.
+
+```bash
+dtk add mongodb
+```
+
+Env vars appended to `.env.template`:
+
+```
+MONGODB_URI=
+MONGODB_DATABASE=
+```
+
+Because the mongodb service holds an open connection pool, it must always be disconnected after use. Create the service outside the suite and call `disconnect()` in a `finally` block so it is guaranteed to run even when a step fails:
+
+```ts
+import "../load-env.js";
+import { suite } from "../suite.js";
+import { createMongoService } from "../services/mongodb.js";
+
+const mongo = createMongoService({
+  uri: process.env.MONGODB_URI!,
+  database: process.env.MONGODB_DATABASE ?? 'dtk',
+});
+
+try {
+  await suite()
+    .step("insert", async () => {
+      const result = await mongo.insertOne("users", { name: "Alice", active: true });
+      console.log("inserted id:", result.insertedId);
+      return result;
+    })
+    .step("find", async () => {
+      const users = await mongo.find<{ name: string; active: boolean }>("users", { active: true });
+      console.log("active users:", users);
+      return users;
+    })
+    .step("update", async () => {
+      const result = await mongo.updateOne(
+        "users",
+        { name: "Alice" },
+        { $set: { active: false } }
+      );
+      console.log("modified:", result.modifiedCount);
+      return result;
+    })
+    .step("delete", async () => {
+      const result = await mongo.deleteMany("users", { active: false });
+      console.log("deleted:", result.deletedCount);
+      return result;
+    })
+    .run("stopOnError");
+} finally {
+  await mongo.disconnect();
+}
+```
+
+Available methods on the mongodb service:
+
+| Method | Description |
+|---|---|
+| `insertOne(collection, doc)` | Inserts a single document; returns `{ insertedId }` |
+| `insertMany(collection, docs)` | Inserts multiple documents; returns `{ insertedCount, insertedIds }` |
+| `findOne<T>(collection, filter)` | Returns the first matching document or `null` |
+| `find<T>(collection, filter?)` | Returns all matching documents as `T[]`; defaults to all documents if no filter |
+| `updateOne(collection, filter, update)` | Updates the first matching document; returns `{ matchedCount, modifiedCount }` |
+| `updateMany(collection, filter, update)` | Updates all matching documents; returns `{ matchedCount, modifiedCount }` |
+| `deleteOne(collection, filter)` | Deletes the first matching document; returns `{ deletedCount }` |
+| `deleteMany(collection, filter)` | Deletes all matching documents; returns `{ deletedCount }` |
+| `disconnect()` | Closes the connection pool -- always call this in a `finally` block |
+
+---
+
 ## Writing runbooks
 
 A runbook is a TypeScript file that uses the `suite()` builder to chain steps and run them in sequence.
@@ -849,4 +924,5 @@ templates/
     open-ai/
     redis/
     sql/
+    mongodb/
 ```
