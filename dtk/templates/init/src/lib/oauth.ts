@@ -7,6 +7,8 @@ export async function clientCredentials(config: OAuthConfig): Promise<TokenRespo
     client_id: config.clientId,
     client_secret: config.clientSecret,
     ...(config.scope ? { scope: config.scope } : {}),
+    ...(config.audience ? { audience: config.audience } : {}),
+    ...(config.resource ? { resource: config.resource } : {}),
   });
 
   return httpPost<URLSearchParams, TokenResponse>(config.tokenUrl, params, {

@@ -3,6 +3,8 @@ export interface OAuthConfig {
   clientSecret: string;
   tokenUrl: string;
   scope?: string;
+  audience?: string;
+  resource?: string;
 }
 
 export interface TokenResponse {
