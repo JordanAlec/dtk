@@ -109,6 +109,8 @@ await suite()
     clientSecret: process.env.CLIENT_SECRET!,
     tokenUrl: process.env.TOKEN_URL!,
     scope: "openid",             // optional
+    audience: process.env.API_AUDIENCE!, // optional -- required by some providers to scope the token to a specific API
+    resource: process.env.API_RESOURCE!, // optional -- RFC 8707 resource indicator, used by Microsoft identity platform and others
   })
   .step("fetch", async (ctx) => {
     const token = await ctx.auth.clientCredentials();

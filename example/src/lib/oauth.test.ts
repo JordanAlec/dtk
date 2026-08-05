@@ -58,4 +58,36 @@ describe('clientCredentials', () => {
     const body = mockHttpPost.mock.calls[0][1] as URLSearchParams;
     expect(body.has('scope')).toBe(false);
   });
+
+  it('includes audience in the body when provided', async () => {
+    mockHttpPost.mockResolvedValue(tokenResponse);
+    await clientCredentials({ ...config, audience: 'https://example.auth0.com/api/v2/' });
+
+    const body = mockHttpPost.mock.calls[0][1] as URLSearchParams;
+    expect(body.get('audience')).toBe('https://example.auth0.com/api/v2/');
+  });
+
+  it('omits audience from the body when not provided', async () => {
+    mockHttpPost.mockResolvedValue(tokenResponse);
+    await clientCredentials(config);
+
+    const body = mockHttpPost.mock.calls[0][1] as URLSearchParams;
+    expect(body.has('audience')).toBe(false);
+  });
+
+  it('includes resource in the body when provided', async () => {
+    mockHttpPost.mockResolvedValue(tokenResponse);
+    await clientCredentials({ ...config, resource: 'https://api.example.com' });
+
+    const body = mockHttpPost.mock.calls[0][1] as URLSearchParams;
+    expect(body.get('resource')).toBe('https://api.example.com');
+  });
+
+  it('omits resource from the body when not provided', async () => {
+    mockHttpPost.mockResolvedValue(tokenResponse);
+    await clientCredentials(config);
+
+    const body = mockHttpPost.mock.calls[0][1] as URLSearchParams;
+    expect(body.has('resource')).toBe(false);
+  });
 });
