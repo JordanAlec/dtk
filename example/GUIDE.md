@@ -13,8 +13,9 @@ Everything you need to know about working with this project, extending it, and a
 5. [Passing data between steps](#passing-data-between-steps)
 6. [Adding a plugin](#adding-a-plugin)
 7. [Available plugins](#available-plugins)
-8. [Writing a custom service](#writing-a-custom-service)
-9. [File reference](#file-reference)
+8. [Composing plugins into a real runbook](#composing-plugins-into-a-real-runbook)
+9. [Writing a custom service](#writing-a-custom-service)
+10. [File reference](#file-reference)
 
 ---
 
@@ -530,6 +531,89 @@ Available methods on the sql service:
 | `disconnect()` | Destroys the connection pool -- always call this in a `finally` block |
 
 Supported clients: `pg` (PostgreSQL), `mysql2` (MySQL / MariaDB), `mssql` (SQL Server).
+
+---
+
+## Composing plugins into a real runbook
+
+Every example above wires up one plugin so its API is easy to read. A real runbook rarely stops at one service -- the reason to reach for dtk instead of a plain script is that steps chain, retry, and clean up consistently across services, not that any single plugin is hard to call directly.
+
+Here's a nightly reconciliation runbook that authenticates against a partner API, pulls pending orders with retry and rate limiting, flags the expensive ones, writes them to DynamoDB, uploads a report to S3, notifies over SNS, and caches a run timestamp in Redis -- one sequential, typed script:
+
+```ts
+import "../load-env.js";
+import { suite } from "../suite.js";
+import { RateLimiter } from "../lib/http.js";
+import { writeJson } from "../lib/file.js";
+
+const apiLimiter = new RateLimiter(5, 1000); // partner API caps us at 5 req/s
+
+interface Order { id: string; status: string; total: number; }
+
+await suite()
+  .oauth({
+    clientId: process.env.PARTNER_CLIENT_ID!,
+    clientSecret: process.env.PARTNER_CLIENT_SECRET!,
+    tokenUrl: process.env.PARTNER_TOKEN_URL!,
+  })
+  .dynamo({ region: process.env.AWS_REGION! })
+  .s3({ region: process.env.AWS_REGION! })
+  .sns({ topicArn: process.env.SNS_TOPIC_ARN!, region: process.env.AWS_REGION! })
+  .redis({ url: process.env.REDIS_URL! })
+  .step("authenticate", async (ctx) => ctx.auth.clientCredentials())
+  .step("fetch-pending-orders", async (ctx) => {
+    const token = ctx.outputs["authenticate"] as { access_token: string };
+    return ctx.http.get<Order[]>(
+      `${process.env.PARTNER_API_URL!}/orders?status=pending`,
+      {
+        headers: { Authorization: `Bearer ${token.access_token}` },
+        timeoutMs: 10_000,
+        rateLimiter: apiLimiter,
+        retry: { attempts: 3, delayMs: 500, maxDelayMs: 5000 },
+      }
+    );
+  })
+  .step("flag-high-value-orders", async (ctx) => {
+    const orders = ctx.outputs["fetch-pending-orders"] as Order[];
+    return orders.filter((o) => o.total > 1000);
+  })
+  .step("record-flags-in-dynamo", async (ctx) => {
+    const flagged = ctx.outputs["flag-high-value-orders"] as Order[];
+    for (const order of flagged) {
+      await ctx.services.dynamo.putItem(process.env.DYNAMO_TABLE_NAME!, {
+        id: order.id, status: "flagged-for-review", total: order.total,
+      });
+    }
+    return flagged;
+  })
+  .step("write-report-to-s3", async (ctx) => {
+    const flagged = ctx.outputs["record-flags-in-dynamo"] as Order[];
+    await writeJson("./tmp/flagged-orders.json", flagged);
+    return ctx.services.s3.uploadFile(
+      process.env.S3_BUCKET_NAME!,
+      `reports/flagged-${new Date().toISOString().slice(0, 10)}.json`,
+      "./tmp/flagged-orders.json",
+      { contentType: "application/json" }
+    );
+  })
+  .step("notify-if-flagged", async (ctx) => {
+    const flagged = ctx.outputs["flag-high-value-orders"] as Order[];
+    if (flagged.length === 0) return;
+    return ctx.services.sns.publish(
+      `${flagged.length} orders flagged for manual review.`,
+      "Nightly reconciliation"
+    );
+  })
+  .step("cache-run-timestamp", async (ctx) => {
+    await ctx.services.redis.set("reconciliation:last-run", new Date().toISOString());
+  })
+  .step("disconnect-redis", async (ctx) => {
+    await ctx.services.redis.quit();
+  })
+  .run("stopOnError");
+```
+
+What a hand-rolled console app would need to reimplement to match this: token refresh handling, a shared retry/backoff policy, a rate limiter shared across calls, a consistent step-naming and output-passing convention, and a guarantee that the Redis connection closes even if an earlier step throws (`stopOnError` plus the trailing `disconnect-redis` step). This runbook gets all of that for free -- the plugins are just the last mile of wiring an SDK client into the same conventions.
 
 ---
 
