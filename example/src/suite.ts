@@ -20,6 +20,8 @@ import { createSqlService } from "./services/sql.js";
 import type { SqlConfig } from "./types/sql.js";
 import { createMongoService } from "./services/mongodb.js";
 import type { MongoConfig } from "./types/mongodb.js";
+import { createKafkaService } from "./services/kafka.js";
+import type { KafkaConfig } from "./types/kafka.js";
 // dtk:imports
 
 import type { OAuthConfig, BasicAuthConfig, BearerTokenConfig, StepContext, StepFn, Step, SuiteRunOption } from "./types/suite.js";
@@ -39,6 +41,7 @@ class Suite {
   private redisConfig?: RedisConfig;
   private sqlConfig?: SqlConfig;
   private mongodbConfig?: MongoConfig;
+  private kafkaConfig?: KafkaConfig;
 // dtk:configs
 
   oauth(config: OAuthConfig): this { this.oauthConfig = config; return this; }
@@ -52,6 +55,7 @@ class Suite {
   redis(config: RedisConfig): this { this.redisConfig = config; return this; }
   sql(config: SqlConfig): this { this.sqlConfig = config; return this; }
   mongodb(config: MongoConfig): this { this.mongodbConfig = config; return this; }
+  kafka(config: KafkaConfig): this { this.kafkaConfig = config; return this; }
 // dtk:methods
 
   step(name: string, fn: StepFn): this {
@@ -97,6 +101,7 @@ class Suite {
         redis: createRedisService(this.redisConfig),
         sql: createSqlService(this.sqlConfig),
         mongodb: createMongoService(this.mongodbConfig),
+        kafka: createKafkaService(this.kafkaConfig),
 // dtk:services
       },
     };

@@ -80,6 +80,25 @@ docker compose down -v
 docker compose up -d
 ```
 
+
+### Kafka (`kafka/`)
+
+Runs [Redpanda](https://redpanda.com/) — a Kafka-API-compatible broker — on port `19092`, plus Redpanda Console (UI) on port `8080`.
+
+```bash
+cd tools/kafka
+docker compose up -d
+```
+
+Set the following in your project's `.env`:
+
+```
+KAFKA_BROKERS=localhost:19092
+KAFKA_CLIENT_ID=dtk-client
+```
+
+Redpanda Console is available at http://localhost:8080 and lets you inspect topics, consumer groups, and messages.
+
 ### AWS (`aws/`)
 
 No docker files. These include helper files to demo and test the runbooks.

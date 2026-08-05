@@ -512,6 +512,69 @@ Available methods on the mongodb service:
 
 ---
 
+### kafka
+
+Produce and consume messages on a Kafka topic via [KafkaJS](https://kafka.js.org/).
+
+```bash
+dtk add kafka
+```
+
+Env vars appended to `.env.template`:
+
+```
+KAFKA_BROKERS=localhost:9092
+KAFKA_CLIENT_ID=dtk-client
+```
+
+For local dev, start [Redpanda](https://redpanda.com/) from `tools/kafka/`:
+
+```bash
+cd tools/kafka && docker compose up -d
+# then set KAFKA_BROKERS=localhost:19092
+```
+
+```ts
+import "../load-env.js";
+import { suite } from "../suite.js";
+
+await suite()
+  .kafka({
+    brokers: process.env.KAFKA_BROKERS!.split(",").map((b) => b.trim()).filter(Boolean),
+    clientId: process.env.KAFKA_CLIENT_ID ?? "dtk-client",
+  })
+  .step("produce-message", async (ctx) => {
+    await ctx.services.kafka.produce({
+      topic: "example-topic",
+      messages: [{ value: "hello from dtk" }],
+    });
+  })
+  .step("consume-message", async (ctx) => {
+    await ctx.services.kafka.consume({
+      topic: "example-topic",
+      groupId: "dtk-group",
+      fromBeginning: true,
+      handler: async ({ message }) => {
+        console.log(message.value?.toString());
+      },
+    });
+  })
+  .step("disconnect", async (ctx) => {
+    await ctx.services.kafka.disconnect();
+  })
+  .run("stopOnError");
+```
+
+Available methods on `ctx.services.kafka`:
+
+| Method | Description |
+|---|---|
+| `produce({ topic, messages })` | Sends messages to a topic. Connects the producer on first call and reuses it. |
+| `consume({ topic, groupId, fromBeginning?, handler })` | Subscribes and runs the consumer. Throws if called a second time without `disconnect()`. |
+| `disconnect()` | Disconnects producer and consumer and resets state. Safe to call even if neither was connected. |
+
+---
+
 ## Writing runbooks
 
 A runbook is a TypeScript file that uses the `suite()` builder to chain steps and run them in sequence.

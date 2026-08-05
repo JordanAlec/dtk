@@ -1,0 +1,37 @@
+{
+  "name": "kafka",
+  "description": "Kafka -- produce, consume, disconnect via KafkaJS",
+  "dependencies": {
+    "kafkajs": "^2.2.4"
+  },
+  "files": [
+    { "src": "service.ts", "dest": "src/services/kafka.ts" },
+    { "src": "types.ts", "dest": "src/types/kafka.ts" },
+    { "src": "service.test.ts", "dest": "src/services/kafka.test.ts" }
+  ],
+  "env": "env.txt",
+  "example": "example.ts",
+  "transforms": {
+    "service.ts": [
+      { "from": "./types.js", "to": "../types/kafka.js" }
+    ],
+    "service.test.ts": [
+      { "from": "./service.js", "to": "./kafka.js" }
+    ]
+  },
+  "patches": {
+    "src/suite.ts": {
+      "imports": [
+        "import { createKafkaService } from \"./services/kafka.js\";",
+        "import type { KafkaConfig } from \"./types/kafka.js\";"
+      ],
+      "configs": "  private kafkaConfig?: KafkaConfig;",
+      "methods": "  kafka(config: KafkaConfig): this { this.kafkaConfig = config; return this; }",
+      "services": "        kafka: createKafkaService(this.kafkaConfig),"
+    },
+    "src/types/suite.ts": {
+      "type-imports": "import type { KafkaConsumeOptions } from \"./kafka.js\";",
+      "service-types": "    kafka: { produce(options: { topic: string; messages: import('kafkajs').Message[] }): Promise<void>; consume(options: KafkaConsumeOptions): Promise<void>; disconnect(): Promise<void>; };"
+    }
+  }
+}
